@@ -4,10 +4,12 @@ export const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
     },
 
     subContainer: {
-        flex: 0.8, 
+        width: '100%',
         justifyContent: 'flex-start', 
         alignItems: 'center',
     },
@@ -20,8 +22,8 @@ export const styles = StyleSheet.create({
     },
 
     logo: {
-        height:'30%',
-        width: '100%',
+        height: 120,
+        width: 120,
     },
 
     otpVerificationTitleContainer:{

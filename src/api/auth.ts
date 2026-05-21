@@ -45,7 +45,6 @@ interface ServerLoginResponseType {
     programs?:      any[];
     supplierInfo?:  any;
 }
-
 const getSwalColor = (type: 'success' | 'info' | 'error' | 'warning') => {
     const colors = {
         success:    '#a5dc86', 
@@ -166,7 +165,7 @@ export const authenticate = () => {
                     message:            'Please allow the app to access your location in your device settings.',
                     confirmButtonColor: getSwalColor('error'),
 
-                    // ✅ Use a clear, immutable string flag instead of a raw function closure
+                    // Use a clear, immutable string flag instead of a raw function closure
                     actionKey:          'OPEN_SETTINGS' 
                 } as any);
             } else if (isTimeout) {
@@ -219,7 +218,7 @@ export const useLoginMutation = (navigation: any) => {
             console.log('[LogIn] payload: ', cleanPayload);
             if (!netState.isConnected || !netState.isInternetReachable) {
                 //This also should show the error message on awesome-alert
-                throw new Error('No internet connection found.');
+                throw new Error('[LogIn] No internet connection found.');
             }
 
             const response = await POST<ServerLoginResponseType>(EndPoints.LOGIN, cleanPayload);
@@ -228,14 +227,12 @@ export const useLoginMutation = (navigation: any) => {
 
             console.log('[LogIn] response status: ', response.status);
 
-            const responseBody = response?.data ? response.data : (response as any);
+            // const responseBody = response?.data ? response.data : (response as any);
 
-            console.log('[Login] responseBody: ', responseBody);
-            console.log('[Login] response data: ', response?.data);
+            // console.log('[Login] responseBody: ', responseBody);
+            // console.log('[Login] response data: ', response?.data);
 
-            // Fix: Access the message from response.data safely
             if (response.status !== true) {
-                //This also should show the error message on awesome-alert
                 throw new Error(response.message || 'Invalid credentials.');
             }
 
@@ -243,7 +240,7 @@ export const useLoginMutation = (navigation: any) => {
             return response;
         },
         onSuccess: (serverData: ServerLoginResponseType) => {
-            console.log('[Login] Received Server Data inside onSuccess:', serverData);
+            console.log('[LogIn] Received Server Data inside onSuccess:', serverData);
             
             // if (serverData && serverData.data) {
             //     // const params = {
@@ -268,12 +265,92 @@ export const useLoginMutation = (navigation: any) => {
         },
         onError: (error: Error) => {
             // Your AwesomeAlert on the UI reads this directly via loginMutation.error.message!
-            console.warn('TanStack Login Exception Tracker:', error.message);
+            console.warn('[LogIn] TanStack Exception Tracker:', error.message);
         }
     });
 };
 
-export const verifyOtp = () => {};
+export const verifyOtpMutation = (navigation: any) => {
+    const setAuth = useAuthStore((state) => state.setAuth);
+
+    return useMutation<{ status: boolean; message: string }, Error, { user_id: string, otp: number, loginParams: any }>({
+        mutationFn: async (cleanPayload) => {
+            const netState = await NetInfo.fetch();
+
+            console.log('[OTP] payload: ', cleanPayload);
+
+            if(!netState.isConnected || !netState.isInternetReachable) {
+                throw new Error('[OTP] No internet connection found.');
+            }
+
+            const response = await POST<any>(EndPoints.VERIFY_OTP, cleanPayload);
+
+            if (response.status !== true) {
+                throw new Error(response.message || 'Invalid OTP')
+            }
+
+            return response;
+        },
+        onSuccess: (serverData, variables) => {
+            console.log('[Otp] Verified Successfully on Backend!', serverData);
+            
+            // Extract the carried profile metadata safely
+            const cachedParams = variables.loginParams;
+
+            if (cachedParams) {
+                // SAFE EXTRACTOR: Gracefully read keys whether they are CamelCase or Snake_case
+                const extractedUserId       = cachedParams.userId || cachedParams.user_id;
+                const extractedEmail        = cachedParams.email;
+                const extractedSupplierName = cachedParams.supplierName || cachedParams.supplier_name;
+                const extractedFullName     = cachedParams.fullName || cachedParams.full_name;
+                const extractedRegName      = cachedParams.regName || cachedParams.reg_name;
+                const extractedPrograms     = cachedParams.programs;
+                const extractedRole         = cachedParams.role;
+                const extractedSupplierInfo = cachedParams.supplierInfo || cachedParams.supplier_info;
+
+                console.log('[Otp Success Parsing Verification]:', {
+                    extractedUserId,
+                    extractedEmail,
+                    extractedFullName
+                });
+
+                // Ensure we actually caught the User ID string before hitting storage layers
+                if (!extractedUserId) {
+                    console.error("[Otp Success Error] userId missing from cache metadata!");
+                    return;
+                }
+
+                const finalAuthSession = {
+                    userId:       extractedUserId,
+                    email:        extractedEmail,
+                    supplierName: extractedSupplierName,
+                    fullName:     extractedFullName,
+                    regName:      extractedRegName,                            
+                    programs:     extractedPrograms,
+                    role:         extractedRole,
+                    supplierInfo: extractedSupplierInfo,
+                };
+
+                console.log('[Otp Success] Mapping full session into application state:', finalAuthSession);
+
+                // FIXED: Convert to explicit string and lock down local storage session state token safely
+                setSession('USER_ID', String(extractedUserId));
+                const session = getSession<string>('USER_ID');
+
+                console.log('[OTP] session User ID: ', session);
+
+                // Hydrate global Zustand engine. This switches isLoggedIn to true and boots MainTabs!
+                setAuth(finalAuthSession);
+                
+            } else {
+                console.error("[Otp Success Error] No local login parameter cache found to build profile session!");
+            }
+        },
+        onError: (error: Error) => {
+            console.warn('[OTP] TanStack Exception Tracker:', error.message);
+        }
+    });
+};
 
 export const resendOtp = () => {};
 
