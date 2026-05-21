@@ -6,14 +6,14 @@ import {
     TextInput, 
     TouchableOpacity, 
     ActivityIndicator, 
-    Modal // 👈 Replaced AwesomeAlert with core native Modal
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loginSchema, LoginFormData } from '../../types/schemas/loginSchema';
 import { useLoginMutation } from '../../api/auth'; 
 import { styles } from './styles';
 import { Images } from '../../assets';
-import { renderAlertPng } from '../../assets/icons'; // Import your custom asset handler
+import { renderAlertPng } from '../../assets/icons'; 
 
 interface LoginProps {
     navigation: any;
