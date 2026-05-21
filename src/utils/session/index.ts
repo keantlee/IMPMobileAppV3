@@ -1,10 +1,8 @@
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv'
 
 // 1. Initialize a single, global MMKV instance for your sessions
 // @ts-ignore
-export const storage = new MMKV({
-  id: 'user-sessions-storage', // Scopes this instance uniquely
-});
+export const storage = createMMKV()
 
 /**
  * Saves data into the local MMKV storage instance.
@@ -30,16 +28,22 @@ const setSession = (name: string, data: unknown): boolean => {
  * Uses TypeScript Generics <T> to return a fully-typed object/primitive.
  */
 const getSession = <T = any>(name: string): T | null => {
+    console.log(`[MMKV getSession] processing...`);
     try {
         const value = storage.getString(name);
-        if (!value) return null;
+        console.log(`[MMKV getSession] get session raw value: "${value}"`);
+
+        // Catch empty data OR accidental literal "undefined"/"null" text strings
+        if (!value || value === 'undefined' || value === 'null') {
+            console.log(`[MMKV getSession] Session is empty or corrupt. Returning null.`);
+            return null; 
+        }
 
         // Check if the string looks like stringified JSON array or object
         if (value.startsWith('{') || value.startsWith('[')) {
             return JSON.parse(value) as T;
         }
         
-        // Return raw string value if it's not a JSON string object
         return value as unknown as T;
     } catch (e) {
         console.error(`[MMKV getSession] Error [${name}]:`, e);

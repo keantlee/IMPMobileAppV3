@@ -1,4 +1,5 @@
 import Geolocation from 'react-native-geolocation-service';
+import { PermissionsAndroid } from 'react-native';
 
 // 1. Define a strict TypeScript interface for what this helper returns
 export interface LocationResult {
@@ -8,6 +9,25 @@ export interface LocationResult {
     code?:      number;
     message?:   string;
 }
+
+const requestLocationPermission = async () => {
+    try {
+        const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+                title: "Location Permission",
+                message: "This app needs access to your location to verify your terminal.",
+                buttonNeutral: "Ask Me Later",
+                buttonNegative: "Cancel",
+                buttonPositive: "OK"
+            }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+        console.warn(err);
+        return false;
+    }
+};
 
 /**
  * Wraps the native Geolocation sensor callback in a promise.
@@ -19,7 +39,7 @@ export const getLocation = (): Promise<LocationResult> => {
             (position) => {            
                 const { latitude, longitude, altitude } = position.coords;
                 
-                console.log(`[GetLocatoion] Lat: ${latitude}, Lng: ${longitude}`);
+                console.log(`[GetLocatoion] Lat: ${latitude}, Lng: ${longitude}, Altitude: ${altitude}, Code: ${0}`);
                 
                 resolve({
                     latitude,
@@ -41,10 +61,15 @@ export const getLocation = (): Promise<LocationResult> => {
                 });
             },
             { 
-                enableHighAccuracy: false, // Low accuracy is faster and consumes less battery on cold start
-                timeout: 15000,            // Fails gracefully if the phone can't find a satellite in 15 seconds
-                maximumAge: 10000          // Uses cached location if it's less than 10 seconds old
+                enableHighAccuracy: true,  // 👈 MUST be true to track hardware GPS state accurately
+                timeout: 10000,            // 10 seconds is plenty for an emulator
+                maximumAge: 0              // Force a fresh read instead of using a stale cache
             }
+            // { 
+            //     enableHighAccuracy: false, // Low accuracy is faster and consumes less battery on cold start
+            //     timeout: 15000,            // Fails gracefully if the phone can't find a satellite in 15 seconds
+            //     maximumAge: 10000          // Uses cached location if it's less than 10 seconds old
+            // }
         );
     });
 };
