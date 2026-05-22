@@ -11,7 +11,7 @@ const ScreenNames = {
   BOTTOM_TABS: {
     HOME: 'Home',
     SCANNING: 'Scanning',
-    USER_PROFILE: 'UserProfile',
+    PROFILE: 'Profile',
   },
   HOME_STACK: {
     HOME: 'HomeScreen',
