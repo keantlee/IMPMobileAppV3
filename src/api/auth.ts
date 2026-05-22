@@ -56,6 +56,8 @@ const getSwalColor = (type: 'success' | 'info' | 'error' | 'warning') => {
 };
 
 export const authenticate = () => {
+    const setAuth = useAuthStore((state) => state.setAuth);
+
     const [isLoading, setIsLoading]     = useState<boolean>(false);
     const [loadingText, setLoadingText] = useState<string>('Initializing...');
     const [alert, setAlert] = useState<AlertState>({
@@ -118,7 +120,8 @@ export const authenticate = () => {
 
             // 3. Fetch session and device location
             setLoadingText('Securing credentials...');
-            const session = getSession<string>('USER_ID');
+            const session               = getSession<string>('USER_ID');
+            const cachedProfileData     = getSession<any>('USER_PROFILE');
 
             // 4. Fetch device coordinates
             const location = await getLocation();
@@ -138,12 +141,44 @@ export const authenticate = () => {
             const isTimeout = location?.code === 3;
 
             if (hasValidCoordinates) {
-                if (session) {
-                    console.log("[AuthCheck] status: Has active session!");
-                    navigation.replace(ScreenNames.APP_STACK.MAIN_TAB);
+                if (session && cachedProfileData) {
+                    console.log("[AuthCheck] status: Found saved profile data! Checking format...");
+
+                    let rehydratedSession = null;
+
+                    try {
+                        if (typeof cachedProfileData === 'string') {
+                            // If it's a raw string, parse it cleanly
+                            rehydratedSession = JSON.parse(cachedProfileData);
+                        } else if (typeof cachedProfileData === 'object' && cachedProfileData !== null) {
+                            // FIX: If it's already a native JavaScript object, use it directly!
+                            rehydratedSession = cachedProfileData;
+                        }
+
+                        if (rehydratedSession && rehydratedSession.userId) {
+                            console.log("[AuthCheck] Success! Hydrating store with profile:", rehydratedSession.fullName);
+                            
+                            // Hydrate the state - This automatically moves them to the Home tab
+                            setAuth(rehydratedSession);
+                        } else {
+                            throw new Error("Parsed data structure is invalid or missing a userId.");
+                        }
+
+                    } catch (parseError) {
+                        // Fallback Gatekeeper: If the data is broken/truncated, don't crash! Wipe it and let them log in again.
+                        console.warn("[AuthCheck Warning] Session data was corrupted or malformed. Clearing session...", parseError);
+                        
+                        // Use whatever clear/remove session method your MMKV helper provides
+                        setSession('USER_PROFILE', null); 
+
+                        // clearSession(); 
+                        
+                        navigation.navigate(ScreenNames.APP_STACK.LOGIN);
+                    }
                 } else {
-                    console.log("[AuthCheck] status: No active session -> returned to login screen.");
-                    navigation.replace(ScreenNames.APP_STACK.LOGIN);
+                    console.log("[AuthCheck] status: No active session -> Directing to login group path.");
+                    
+                    navigation.navigate(ScreenNames.APP_STACK.LOGIN);
                 }
             } else if (isLocationServiceSwitchedOff) {
                 console.log("[AuthCheck] status: Location Service Disabled");
@@ -333,14 +368,17 @@ export const verifyOtpMutation = (navigation: any) => {
 
                 console.log('[Otp Success] Mapping full session into application state:', finalAuthSession);
 
-                // FIXED: Convert to explicit string and lock down local storage session state token safely
+                // Write to Disk Caching Engine
                 setSession('USER_ID', String(extractedUserId));
-                const session = getSession<string>('USER_ID');
+                setSession('USER_PROFILE', JSON.stringify(finalAuthSession)); 
 
-                console.log('[OTP] session User ID: ', session);
+                console.log('[OTP] session User ID Saved:', extractedUserId);
 
-                // Hydrate global Zustand engine. This switches isLoggedIn to true and boots MainTabs!
-                setAuth(finalAuthSession);
+                // Hydrate global Zustand engine. 
+                // This reactively shifts AppStack from false to true, loading the Dashboard instantly!
+                setTimeout(() => {
+                    setAuth(finalAuthSession);
+                }, 200); // 👈 Safely clear all active UI animations before flipping the login switch
                 
             } else {
                 console.error("[Otp Success Error] No local login parameter cache found to build profile session!");
@@ -351,7 +389,3 @@ export const verifyOtpMutation = (navigation: any) => {
         }
     });
 };
-
-export const resendOtp = () => {};
-
-export const sendForgotPasswordLink = () => {};
