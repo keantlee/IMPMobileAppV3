@@ -9,7 +9,6 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    // 👈 Wrap everything inside this container
     <GestureHandlerRootView style={styles.container}>
       <QueryClientProvider client={queryClient}>
         <Route />

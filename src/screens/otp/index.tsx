@@ -9,7 +9,7 @@ import {
     Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native'; // 👈 Import useRoute hook
+import { useRoute } from '@react-navigation/native'; 
 import { verifyOtpMutation } from '../../api/auth';
 import { styles } from './styles';
 import { Images } from '../../assets';
@@ -207,6 +207,7 @@ const Otp = ({ navigation }: OtpProps) => {
                 visible={alertConfig.visible}
                 transparent={true}
                 animationType="fade"
+                // This handles Android hardware back buttons safely
                 onRequestClose={() => {
                     setAlertConfig(prev => ({ ...prev, visible: false }));
                     otpMutation.reset();
@@ -226,8 +227,19 @@ const Otp = ({ navigation }: OtpProps) => {
                         <TouchableOpacity
                             style={{ backgroundColor: '#009246', width: '100%', paddingVertical: 12, borderRadius: 6, alignItems: 'center' }}
                             onPress={() => {
+                                // 1. First, hide the modal layout
                                 setAlertConfig(prev => ({ ...prev, visible: false }));
-                                otpMutation.reset();
+                                
+                                // 2. ✅ FIX: If it was a success token, add a slight delay before resetting 
+                                // the mutation state. This gives the native modal transition window a 
+                                // clean 150ms frame buffer to dissolve safely!
+                                if (alertConfig.type === 'success') {
+                                    setTimeout(() => {
+                                        otpMutation.reset();
+                                    }, 150);
+                                } else {
+                                    otpMutation.reset();
+                                }
                             }}
                         >
                             <Text style={{ color: '#ffffff', fontWeight: '600' }}>OK</Text>
