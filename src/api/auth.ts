@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import NetInfo from "@react-native-community/netinfo";
-import getBaseUrl from "../config";
 import { POST, GET } from "./config/axios";
 import { getSession, setSession, clearSession } from '../utils/session';
 import { checkAppVersion } from '../utils/app_version';
@@ -8,7 +7,7 @@ import EndPoints from './config/endpoints';
 import ScreenNames from '../navigation/screenNames';
 import { useMutation } from '@tanstack/react-query'; // Imported for the new engine
 import { useAuthStore } from '../store/useAuthStore'; // Imported your new store
-import { Linking, PermissionsAndroid } from 'react-native';
+// import { Linking, PermissionsAndroid } from 'react-native';
 import { getLocation } from '../utils/location';
 
 // Helpers 
@@ -312,11 +311,11 @@ export const verifyOtpMutation = (navigation: any) => {
         mutationFn: async (cleanPayload) => {
             const netState = await NetInfo.fetch();
 
-            console.log('[OTP] payload: ', cleanPayload);
-
             if(!netState.isConnected || !netState.isInternetReachable) {
                 throw new Error('[OTP] No internet connection found.');
             }
+
+            console.log('[OTP] payload: ', cleanPayload);
 
             const response = await POST<any>(EndPoints.VERIFY_OTP, cleanPayload);
 
