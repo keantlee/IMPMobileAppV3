@@ -137,7 +137,7 @@ const Otp = ({ navigation }: OtpProps) => {
                     <MaskedEmail email={email || "your email"} />
                 </Text>
 
-                {/* ⚡️ 3. The 6-Digit Interactive UI Square Grid Container */}
+                {/* 3. The 6-Digit Interactive UI Square Grid Container */}
                 <View style={{ 
                     flexDirection: 'row', 
                     justifyContent: 'space-between', 
@@ -230,7 +230,7 @@ const Otp = ({ navigation }: OtpProps) => {
                                 // 1. First, hide the modal layout
                                 setAlertConfig(prev => ({ ...prev, visible: false }));
                                 
-                                // 2. ✅ FIX: If it was a success token, add a slight delay before resetting 
+                                // 2. FIX: If it was a success token, add a slight delay before resetting 
                                 // the mutation state. This gives the native modal transition window a 
                                 // clean 150ms frame buffer to dissolve safely!
                                 if (alertConfig.type === 'success') {

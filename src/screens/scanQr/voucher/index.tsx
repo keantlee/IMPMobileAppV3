@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, Alert, Dimensions } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { useBarcodeScannerOutput, Barcode } from 'react-native-vision-camera-barcode-scanner';
-// 🚨 NEW IMPORT: Tracks when this screen becomes active/focused
+// tracks when this screen becomes active/focused
+import { useNavigation } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
+import { scanVoucherMutation } from '../../../api/transaction';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SCAN_BOX_SIZE = 250; 
@@ -12,9 +14,14 @@ const VoucherQR = () => {
     const device = useCameraDevice('back');
     const { hasPermission, requestPermission } = useCameraPermission();
     const [isScanning, setIsScanning] = useState(true);
+
+    const navigation = useNavigation<any>();
     
-    // 🚨 NEW HOOK: Returns true if the user is looking at this screen/tab
+    // returns true if the user is looking at this screen/tab
     const isFocused = useIsFocused();
+
+    // 1. Initialize the mutation at the top root level of the component!
+    const { mutate: verifyVoucher, isPending } = scanVoucherMutation();
 
     useEffect(() => {
         if (!hasPermission) {
@@ -22,13 +29,13 @@ const VoucherQR = () => {
         }
     }, [hasPermission]);
 
-    // 🚨 TAB LIFECYCLE TRACKER: Reset scanning state when returning to the tab
+    // reset scanning state when returning to the tab
     useEffect(() => {
         if (isFocused) {
-            console.log('🔄 Tab Focused: Resetting scanner to active mode.');
+            console.log('Tab Focused: Resetting scanner to active mode.');
             setIsScanning(true);
         } else {
-            console.log('⏸️ Tab Blurred: Pausing scanner tracking.');
+            console.log('Tab Blurred: Pausing scanner tracking.');
             setIsScanning(false);
         }
     }, [isFocused]);
@@ -36,30 +43,26 @@ const VoucherQR = () => {
     const barcodeOutput = useBarcodeScannerOutput({
         barcodeFormats: ['qr-code'],
         onBarcodeScanned(barcodes: Barcode[]) {
-            // Only process codes if the engine is scanning AND the tab is focused
-            if (barcodes.length === 0 || !isScanning || !isFocused) return;
+            // Block processing if camera is paused, blurred, OR currently handling an API transaction request
+            if (barcodes.length === 0 || !isScanning || !isFocused || isPending) return;
 
             const rawBarcode = barcodes[0] as any;
             const scannedValue = rawBarcode.displayValue || rawBarcode.rawValue || rawBarcode.value || rawBarcode.text;
             
             if (!scannedValue) return;
 
+            // Immediately turn off the scanning state flag to avoid double scans
             setIsScanning(false);
-            console.log('[VOUCHER QR] refernce #:', scannedValue);
+            console.log('[VOUCHER QR] Reference # found:', scannedValue);
 
-            Alert.alert(
-                "Voucher Found!",
-                `Code: ${scannedValue}`,
-                [
-                    { 
-                        text: "OK", 
-                        onPress: () => setIsScanning(true)
-                    }
-                ]
-            );
+            // Fire the mutation safely on-demand using .mutate() 
+            verifyVoucher({
+                voucherCode: scannedValue,
+                navigation: navigation
+            });
         },
         onError(error) {
-            console.error('Barcode Scanner Output Runtime Error:', error);
+            console.error('QR Scanner Output Runtime Error:', error);
         }
     });
 

@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from '../screens/home';
 import ScreenNames from './screenNames';
 import VoucherQR from '../screens/scanQr/voucher';
+import FarmerProfile from '../screens/transaction/voucher/farmerProfile';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type TransactionStackParamList = {
@@ -24,12 +25,29 @@ export const TransactionStackComponent: React.FC = () => {
             }}
             initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
         >
-
+            {/* Scan QR Screen */}
             <TransactionStack.Screen
                 component={VoucherQR}
                 name={ScreenNames.TRANSACTION_STACK.SCANNING}
             />
 
+            {/* Farmer Profile Screen */}
+            <TransactionStack.Screen
+                component={FarmerProfile}
+                name={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
+            />
+
+            {/* Cart Screen */}
+
+            {/* Add Items Screen */}
+
+            {/* Edit Items Screen */}
+
+            {/* Checkout Screen */}
+
+            {/* Review Transaction Screen */}
+
+            {/* Upload Attachment Screen */}
         </TransactionStack.Navigator>
     );
 };
