@@ -98,17 +98,17 @@ const Home = ({ navigation }: HomeProps) => {
                             handleScanQR={handleScanQR}
                         />
 
-                        {/* ✅ THE UNIFIED TRANSACTION CARD CONTAINER */}
+                        {/* The unified transaction card container */}
                         <View style={{
                             backgroundColor: '#ffffff',
                             borderRadius: 16,
                             padding: 16,
                             marginTop: 16,
-                            marginHorizontal: 2, // 👈 KEY FIX: Creates a tiny breathing room inside the container so shadows don't clip!
+                            marginHorizontal: 2, // KEY FIX: Creates a tiny breathing room inside the container so shadows don't clip!
                             borderWidth: 1,
                             borderColor: '#EFEFEF',
                             
-                            // 🌟 360-Degree Premium Shadow Configuration
+                            // 360-Degree Premium Shadow Configuration
                             shadowColor: '#000000',
                             shadowOffset: { width: 0, height: 4 },
                             shadowOpacity: 0.06,
