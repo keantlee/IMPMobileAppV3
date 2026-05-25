@@ -19,8 +19,8 @@ interface EnvironmentConfig {
 
 const ENDPOINTS: Record<AppMode, EnvironmentConfig> = {
     [AppMode.LOCAL]: {
-        apiHost:        `http://localhost:8000/api-v2/`,
-        apiAccessPoint: `http://localhost:8000/api-v2/`,
+        apiHost:        `http://172.17.151.52:8000/api-v2/`,
+        apiAccessPoint: `http://172.17.151.52:8000/api-v2/`,
     },
     [AppMode.DEVELOPMENT]: {
         apiHost:        'https://devsysadd.da.gov.ph/imp/api-v2/',
