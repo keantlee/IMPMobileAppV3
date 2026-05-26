@@ -6,6 +6,10 @@ import Home from '../screens/home';
 import ScreenNames from './screenNames';
 import VoucherQR from '../screens/scanQr/voucher';
 import FarmerProfile from '../screens/transaction/voucher/farmerProfile';
+import Cart from '../screens/transaction/voucher/cart';
+import AddItem from '../screens/transaction/voucher/addItem';
+
+import { MOCK_VOUCHER_INFO } from '../data/voucherInfo';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type TransactionStackParamList = {
@@ -23,7 +27,8 @@ export const TransactionStackComponent: React.FC = () => {
                  // Native stack equivalent for clean fade transitions across operating systems
                  animation: 'fade_from_bottom' 
             }}
-            initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
+            // initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
+            initialRouteName={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
         >
             {/* Scan QR Screen */}
             <TransactionStack.Screen
@@ -35,11 +40,24 @@ export const TransactionStackComponent: React.FC = () => {
             <TransactionStack.Screen
                 component={FarmerProfile}
                 name={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
+                initialParams={{
+                    voucherInfo: MOCK_VOUCHER_INFO,
+                    cart: [],
+                    cartTotalAmount: 0
+                }}
             />
 
             {/* Cart Screen */}
+            <TransactionStack.Screen
+                component={Cart}
+                name={ScreenNames.TRANSACTION_STACK.CART}
+            />
 
             {/* Add Items Screen */}
+            <TransactionStack.Screen
+                component={AddItem}
+                name={ScreenNames.TRANSACTION_STACK.ADD_ITEM}
+            />
 
             {/* Edit Items Screen */}
 
