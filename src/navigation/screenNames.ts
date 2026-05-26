@@ -28,6 +28,9 @@ const ScreenNames = {
   TRANSACTION_STACK: {
     SCANNING: 'ScanningScreen',
     FARMER_PROFILE: 'FarmerProfile',
+    CART: 'Cart',
+    ADD_ITEM: 'AddItem',
+    EDIT_ITEM: 'EditIem',
     COMMODITIES: 'Commodities',
     SET_COMMODITY_DETAILS: 'SetCommodityDetails',
     EDIT_COMMODITY_DETAILS: 'TransactionEditCommodityDetails',

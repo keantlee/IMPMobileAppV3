@@ -82,3 +82,9 @@ export interface VoucherInfo {
   fertilizer_categories: FertilizerCategory[];
   getCheckCategoryHasSubCategory: CheckCategoryHasSubCategory[];
 }
+
+export interface CartScreenParams {
+  status:       boolean;
+  voucherInfo:  VoucherInfo; // uses the voucherInfo object
+  timer?:       number;
+}
