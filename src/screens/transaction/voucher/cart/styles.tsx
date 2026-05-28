@@ -44,6 +44,7 @@ export const styles = StyleSheet.create({
     itemInfo: { flex: 1, paddingRight: 8 },
     itemName: { fontSize: 16, fontWeight: '700', color: '#2C3E50' },
     itemSub: { fontSize: 13, color: '#7F8C8D', marginTop: 2 },
+    itemCashAdd: { fontSize: 13, color: '#333', fontWeight: '600', marginTop: 4 },
     itemDetails: { fontSize: 13, color: '#333', fontWeight: '500', marginTop: 4 },
     itemPriceBlock: { alignItems: 'flex-end' },
     itemPrice: { fontSize: 16, fontWeight: '800', color: '#009246' },

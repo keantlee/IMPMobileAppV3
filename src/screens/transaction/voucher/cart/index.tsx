@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -18,9 +18,11 @@ import ScreenNames from '../../../../navigation/screenNames';
 import { styles } from './styles';
 
 interface CartRouteParams {
-    status:         boolean;
-    voucherInfo:    VoucherInfo;
-    timer?:         number;
+    status:                     boolean;
+    voucherInfo:                VoucherInfo;
+    timer?:                     number;
+    newItemFromForm?:           any;           // Intercepts returning items safely
+    updatedCartFromCheckout?:   any[];         // Intercepts checkout updates safely
 }
 
 const Cart = () => {
@@ -34,7 +36,50 @@ const Cart = () => {
     // 1. Local Shopping Cart State Allocation
     const [cart, setCart]        = useState<any[]>([]);
 
-    // 2. Memoized Financial Metrics Calculations
+    // 2. Navigation Param Parameter Event Listeners
+    useEffect(() => {
+        // 1. Intercept items dropping back from the AddItem form screen
+        if (route.params?.newItemFromForm) {
+            const incomingItem = route.params.newItemFromForm;
+            console.log("[CART SCREEN] Serialized item received from parameter stream:", incomingItem);
+            
+            // Seed our local array accumulator using whatever historical items came back 
+            // inside route.params.cart from AddItem, ensuring past items are NEVER dropped!
+            setCart((prevCart) => {
+                const baseCart = route.params?.cart && route.params.cart.length > prevCart.length 
+                    ? route.params.cart 
+                    : prevCart;
+
+                // Prevent duplicates on rapid double-taps
+                const isDuplicate = baseCart.some(
+                    (item: { name: string; totalAmount: number; quantity: number; }) => 
+                        item.name === incomingItem.name && 
+                        item.totalAmount === incomingItem.totalAmount &&
+                        item.quantity === incomingItem.quantity
+                );
+                
+                if (isDuplicate) return baseCart;
+                return [...baseCart, incomingItem];
+            });
+
+            // Wipe both params simultaneously to ensure your route footprint is perfectly clean
+            navigation.setParams({ 
+                newItemFromForm: undefined,
+                cart: undefined 
+            });
+        }
+
+        // 2. Intercept synchronization arrays dropping back from Checkout
+        if (route.params?.updatedCartFromCheckout) {
+            const synchronizedCart = route.params.updatedCartFromCheckout;
+            console.log("[CART SCREEN] Cart state synced from Checkout context parameters:", synchronizedCart);
+            
+            setCart(synchronizedCart);
+            navigation.setParams({ updatedCartFromCheckout: undefined });
+        }
+    }, [route.params?.newItemFromForm, route.params?.updatedCartFromCheckout, route.params?.cart]);
+
+    // 3. Memoized Financial Metrics Calculations
     const cartTotal = useMemo(() => {
         return cart.reduce((prev, current) => prev + parseFloat(current.totalAmount || 0), 0);
     }, [cart]);
@@ -43,12 +88,6 @@ const Cart = () => {
         const balance = parseFloat(voucherInfo?.voucherRemainingBalance || '0') - cartTotal;
         return balance < 0 ? 0 : balance;
     }, [voucherInfo?.voucherRemainingBalance, cartTotal]);
-
-    // 3. Callback Actions
-    const addToCart = useCallback((item: any) => {
-        console.log("[CART SCREEN] Item appended to basket state:", item);
-        setCart((prevCart) => [...prevCart, item]);
-    }, []);
 
     const handleRemoveItem = useCallback((index: number) => {
         setCart((prevCart) => {
@@ -61,12 +100,11 @@ const Cart = () => {
     const handleGoToCheckout = () => {
         if (cart.length === 0) return;
 
+        // REMOVED: handleUpdateCart callback function parameter
         navigation.navigate(ScreenNames.TRANSACTION_STACK.CHECKOUT, {
             voucherInfo,
             cart,
             timer,
-            // Pass state modifier reference down over navigation bridge channel safely
-            handleUpdateCart: (updatedCart: any[]) => setCart(updatedCart), 
         });
     };
 
@@ -85,12 +123,12 @@ const Cart = () => {
             return;
         }
 
+        // REMOVED: handleUpdateCart callback function parameter
         navigation.navigate(ScreenNames.TRANSACTION_STACK.ADD_ITEM, {
             commodityInfo:      selectedItem,
             voucherInfo:        voucherInfo,
-            cart:               cart,
-            cartTotalAmount:    cartTotal,
-            addToCart:          addToCart,
+            cart:               cart,            // Passes the current basket items down
+            cartTotalAmount:    cartTotal,       // Keeps form math tracking accurate
             timer:              timer
         });
     };
@@ -149,8 +187,8 @@ const Cart = () => {
             <View style={styles.itemCard}>
                 <View style={styles.itemRow}>
                     <View style={styles.itemInfo}>
-                        <Text style={styles.itemName}>{item.name || "Commodity Item"}</Text>
-                        <Text style={styles.itemSub}>{item.subCategory || "No Sub-Category"}</Text>
+                        <Text style={styles.itemName}>{item.subCategory || "No Sub-Category"}</Text>
+                        <Text style={styles.itemSub}>{item.categoryName}</Text>
                         <Text style={styles.itemDetails}>
                             Qty: {item.quantity} {item.unitMeasurement}
                         </Text>

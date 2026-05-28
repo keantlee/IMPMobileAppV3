@@ -1,15 +1,44 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-container: { flex: 1, backgroundColor: '#F8F9FA' },
-    header: { height: 56, backgroundColor: '#009246', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-    backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-    backIcon: { fontSize: 24, color: '#FFF', fontWeight: 'bold' },
-    headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-    backPlaceholder: { width: 40 },
-    scrollContent: { padding: 20, paddingBottom: 140 },
-    
-    formGroup: { marginBottom: 16 },
+container: { 
+    flex: 1, 
+    backgroundColor: '#F8F9FA' 
+},
+    header: { 
+        height: 56, 
+        backgroundColor: '#009246', 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        paddingHorizontal: 8 
+    },
+    backButton: { 
+        width: 40, 
+        height: 40, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    backIcon: { 
+        fontSize: 24, 
+        color: '#FFF', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 18, 
+        fontWeight: '700', 
+        color: '#FFF' 
+    },
+    backPlaceholder: { 
+        width: 40 
+    },
+    scrollContent: { 
+        padding: 20, 
+        paddingBottom: 140 
+    },
+    formGroup: { 
+        marginBottom: 16 
+    },
     formLabel: { 
         fontSize: 14, 
         fontWeight: '600', 
@@ -20,10 +49,35 @@ container: { flex: 1, backgroundColor: '#F8F9FA' },
         color: '#D9383A', // High contrast error danger red
         fontWeight: '700',
     },
-    inputField: { height: 48, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#BDC3C7', borderRadius: 8, paddingHorizontal: 12, color: '#2C3E50' },
-    dropdownBox: { height: 48, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#009246', borderRadius: 8, justifyContent: 'center', paddingHorizontal: 12 },
-    flexRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-    errorLabel: { color: '#D9383A', fontSize: 12, marginTop: 4, fontWeight: '500' },
+    inputField: { 
+        height: 48,
+        backgroundColor: '#FFF', 
+        borderWidth: 1, 
+        borderColor: '#BDC3C7', 
+        borderRadius: 8, 
+        paddingHorizontal: 12, 
+        color: '#2C3E50' 
+    },
+    dropdownBox: { 
+        height: 48, 
+        backgroundColor: '#FFF', 
+        borderWidth: 1, 
+        borderColor: '#009246', 
+        borderRadius: 8, 
+        justifyContent: 'center', 
+        paddingHorizontal: 12 
+    },
+    flexRow: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        marginBottom: 16 
+    },
+    errorLabel: { 
+        color: '#D9383A', 
+        fontSize: 12, 
+        marginTop: 4, 
+        fontWeight: '500' 
+    },
     
     /* Dropdown Search Layout Box */
     modalContainer: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#BDC3C7', borderRadius: 8, marginTop: 4, padding: 8, elevation: 3 },
