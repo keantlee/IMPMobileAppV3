@@ -10,6 +10,8 @@ import Cart from '../screens/transaction/voucher/cart';
 import AddItem from '../screens/transaction/voucher/addItem';
 
 import { MOCK_VOUCHER_INFO } from '../data/voucherInfo';
+import Checkout from '../screens/transaction/voucher/checkout';
+import EditItem from '../screens/transaction/voucher/editItem';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type TransactionStackParamList = {
@@ -58,10 +60,18 @@ export const TransactionStackComponent: React.FC = () => {
                 component={AddItem}
                 name={ScreenNames.TRANSACTION_STACK.ADD_ITEM}
             />
-
+    
             {/* Edit Items Screen */}
+            <TransactionStack.Screen
+                component={EditItem}
+                name={ScreenNames.TRANSACTION_STACK.EDIT_ITEM}
+            />
 
             {/* Checkout Screen */}
+            <TransactionStack.Screen
+                component={Checkout}
+                name={ScreenNames.TRANSACTION_STACK.CHECKOUT}
+            />
 
             {/* Review Transaction Screen */}
 

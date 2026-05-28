@@ -11,7 +11,7 @@ interface EnvironmentConfig {
     apiAccessPoint: string;
 }
 
-// 1. THE FIX: Dynamically target the right local loopback ip depending on the runtime platform
+// 1. Dynamically target the right local loopback ip depending on the runtime platform
 // const localIp = Platform.OS === 'android' ? '10.0.2.2' : '127.0.0.1';
 
 // Note: If you run your local PHP/Laravel server on a specific port (like :8000), append it here:
@@ -19,8 +19,8 @@ interface EnvironmentConfig {
 
 const ENDPOINTS: Record<AppMode, EnvironmentConfig> = {
     [AppMode.LOCAL]: {
-        apiHost:        `http://172.17.150.247:8080/api-v2/`,
-        apiAccessPoint: `http://172.17.150.247:8080/api-v2/`,
+        apiHost:        `http://172.17.150.206:8080/api-v2/`,
+        apiAccessPoint: `http://172.17.150.206:8080/api-v2/`,
     },
     [AppMode.DEVELOPMENT]: {
         apiHost:        'https://devsysadd.da.gov.ph/imp/api-v2/',
@@ -37,7 +37,7 @@ const ACTIVE_MODE: AppMode = AppMode.LOCAL;
 export default function getBaseUrl(): EnvironmentConfig {
     const config = ENDPOINTS[ACTIVE_MODE];
 
-    // 2. Pro Tip: Printing ${config} directly outputs [object Object]. Let's log the actual string url!
+    // 2. Printing ${config} directly outputs [object Object]. Let's log the actual string url!
     console.log(`[Config] Successfully connected to: ${config?.apiHost}`);
 
     if (!config) {

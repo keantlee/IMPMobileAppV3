@@ -21,21 +21,21 @@ export interface CheckCategoryHasSubCategory {
 }
 
 export interface VoucherInfo {
-  voucher_id: string;
-  rsbsa_no: string;
-  control_no: string;
-  reference_no: string;
-  program_id: string;
-  fund_id: string;
-  fund_desc: string;
-  type: string;
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-  ext_name: string;
-  sex: string;
-  birthday: string;
-  birth_place: string;
+  voucher_id:               string;
+  rsbsa_no:                 string;
+  control_no:               string;
+  reference_no:             string;
+  program_id:               string;
+  fund_id:                  string;
+  fund_desc:                string;
+  type:                     string;
+  first_name:               string;
+  middle_name:              string;
+  last_name:                string;
+  ext_name:                 string;
+  sex:                      string;
+  birthday:                 string;
+  birth_place:              string;
   mother_maiden:            string;
   contact_no:               string;
   civil_status:             string | null;
@@ -64,23 +64,23 @@ export interface VoucherInfo {
   crop_area:                string;
   programID:                string;
   title:                    string;
-  shortname: string;
-  description: string;
-  cluster: string;
-  intervention: string;
-  remitter_id: string;
-  duration_start_date: string;
-  duration_end_date: string;
-  status: string; // "1"
-  one_time_transaction: string; // "0"
-  process_type: string; // "VOUCHER"
-  is_special: string; // "1"
-  prog_code: string;
-  proj_code: string | null;
-  sub_categories: SubCategory[];
-  unit_measurements: UnitMeasurement[];
-  fertilizer_categories: FertilizerCategory[];
-  getCheckCategoryHasSubCategory: CheckCategoryHasSubCategory[];
+  shortname:                string;
+  description:              string;
+  cluster:                  string;
+  intervention:             string;
+  remitter_id:              string;
+  duration_start_date:      string;
+  duration_end_date:              string;
+  status:                         string; // "1"
+  one_time_transaction:           string; // "0"
+  process_type:                   string; // "VOUCHER"
+  is_special:                     string; // "1"
+  prog_code:                      string;
+  proj_code:                      string | null;
+  sub_categories:                 SubCategory[]; // [ { fertilizer_sub_category_id: '1', fertilizer_category_id: '1', sub_category: 'Urea (46-0-0)' }, { fertilizer_category_id: '1', sub_category: 'Complete (14-14-14)' }, { fertilizer_category_id: '1', sub_category: 'Ammonium Sulfate (21-0-0)' }, { fertilizer_category_id: '1', sub_category: 'Compost Soil Amendment' }, { fertilizer_category_id: '1', sub_category: 'Vermicast Nutrient Pack' } ]
+  unit_measurements:              UnitMeasurement[]; // [ { label: 'Liter (L)', value: '1' }, { label: 'Kilo (KG)', value: '2' }, { label: 'Gram (G)', value: '3' }, { label: 'Mililiter (ML)', value: '4' } ]
+  fertilizer_categories:          FertilizerCategory[]; // [ { label: 'Inorganic Fertilizers', value: '1' } ]
+  getCheckCategoryHasSubCategory: CheckCategoryHasSubCategory[];  // [1, 6, 8, 9, 10, 11, 12, 13]
 }
 
 export interface CartScreenParams {
