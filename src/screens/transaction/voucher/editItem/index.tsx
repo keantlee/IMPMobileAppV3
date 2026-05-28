@@ -15,35 +15,34 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 // Global Typing Contracts
 import { VoucherInfo } from '../../../../@types/voucher';
 
-// Import local custom styles configuration
-import { styles } from './styes';
+// Style Configurations and Screen Context Maps
+import { styles } from './styles';
 import { AmountInput, Category } from '../../../../components/inputs';
 import ScreenNames from '../../../../navigation/screenNames';
 
-// Placeholder standard elements wrapper. Swap back your actual project UI variants if required.
-// e.g., import Components from '../../../components';
-
-interface AddItemRouteParams {
-    commodityInfo?: any;
-    voucherInfo: VoucherInfo;
-    cart: any[];
-    cartTotalAmount: number;
-    timer?: number;
+interface EditItemRouteParams {
+    commodityInfo:      any; // Includes {...item, index} passed down from Checkout
+    voucherInfo:        VoucherInfo;
+    cart:               any[];
+    cartTotalAmount:    number; // This maps exactly to our 'otherItemsTotal' balance line
+    timer?:             number;
 }
 
-const AddItem = () => {
+const EditItem = () => {
     const navigation    = useNavigation<any>();
     const route         = useRoute<any>();
 
     // Cast route parameters cleanly
-    const routeParams = (route.params || {}) as AddItemRouteParams;
+    const routeParams = (route.params || {}) as EditItemRouteParams;
     const { 
+        commodityInfo, 
         voucherInfo, 
-        cart, 
-        cartTotalAmount, 
+        cart,
+        cartTotalAmount: otherItemsTotal, 
+        timer,
     } = routeParams;
 
-    console.log('[ADD ITEM SCREEN] route params payload: ', routeParams);
+    console.log('[EDIT ITEM SCREEN] Route parameters payload intercepted:', routeParams);
 
     // 1. Core Structural State Trackers
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -51,45 +50,45 @@ const AddItem = () => {
     const [search, setSearch]       = useState<string>('');
     const searchRef                 = useRef<TextInput>(null);
 
-    // Form Object Parameters Trackers
+    // Form Object Parameter Trackers (Pre-loaded with existing item values)
     const [category, setCategory] = useState({ 
-        value: '', 
+        value: commodityInfo?.category || '', 
         focus: false, 
         error: false, 
         errorMessage: '' 
     });
     const [subCategory, setSubCategory] = useState({ 
-        value: '', 
+        value: commodityInfo?.subCategory || '', 
         focus: false, 
         error: false, 
         errorMessage: '' 
     });
     const [quantity, setQuantity] = useState({ 
-        value: 0.00, 
+        value: commodityInfo?.quantity || 0.00,  
         focus: false, 
         error: false, 
         errorMessage: '' 
     });
     const [unitMeasurement, setUnitMeasurement] = useState({ 
-        value: '', 
+        value: commodityInfo?.uom || '', 
         focus: false, 
         error: false, 
         errorMessage: '' 
     });
     const [totalAmount, setTotalAmount] = useState({ 
-        value: 0.00, 
+        value: parseFloat(commodityInfo?.totalAmount || '0'), 
         focus: false,
         error: false, 
         errorMessage: '' 
     });
     const [remarks, setRemarks] = useState({ 
-        value: '', 
+        value: commodityInfo?.itemCategoryRemarks === "None" ? "" : commodityInfo?.itemCategoryRemarks || '', 
         focus: false, 
         error: false, 
         errorMessage: '' 
     });
 
-    // 2. Performance Memoized Framework Arrays & Balances
+    // 2. Performance Memoized Arrays & Dynamic Balances
     const checkCategoryHasSubCategory = useMemo(() => 
         voucherInfo?.getCheckCategoryHasSubCategory?.map(c => c.fertilizer_category_id) || [], 
     [voucherInfo]);
@@ -109,31 +108,27 @@ const AddItem = () => {
         return filteredByCategory;
     }, [category.value, voucherInfo, search]);
 
+    const availableWalletBalance = useMemo(() => {
+        const remainingBalanceProfile = parseFloat(voucherInfo?.voucherRemainingBalance || '0');
+        const otherItemsCost = parseFloat((otherItemsTotal || 0).toString());
+        return remainingBalanceProfile - otherItemsCost;
+    }, [voucherInfo, otherItemsTotal]);
+
     const cashAdded = useMemo(() => {
-        const remainingBalance = parseFloat(voucherInfo?.voucherRemainingBalance || '0');
-        const totalCartAmount = parseFloat((cartTotalAmount || 0).toString());
         const inputAmount = parseFloat(totalAmount.value.toString() || '0');
-        
-        const currentWallet = remainingBalance - totalCartAmount;
-        const diff = currentWallet - inputAmount;
-        
+        const diff = availableWalletBalance - inputAmount;
         return diff < 0 ? Math.abs(diff) : 0;
-    }, [voucherInfo?.voucherRemainingBalance, cartTotalAmount, totalAmount.value]);
+    }, [availableWalletBalance, totalAmount.value]);
 
     const remainingBalanceDisplay = useMemo(() => {
-        const remainingBalance = parseFloat(voucherInfo?.voucherRemainingBalance || '0');
-        const totalCartAmount = parseFloat((cartTotalAmount || 0).toString());
         const inputAmount = parseFloat(totalAmount.value.toString() || '0');
-        
-        const balance = (remainingBalance - totalCartAmount) - inputAmount;
+        const balance = availableWalletBalance - inputAmount;
         return balance < 0 ? 0 : balance;
-    }, [voucherInfo, cartTotalAmount, totalAmount.value]);
+    }, [availableWalletBalance, totalAmount.value]);
 
     // 3. Optimized Change Handlers
     const handleChangeQuantity = useCallback((value: number | null) => {
-        // Treat null/empty as 0 safely
         const newValue = value === null ? 0 : Math.abs(value);
-
         let error = false;
         let errorMessage = '';
 
@@ -151,7 +146,6 @@ const AddItem = () => {
                 errorMessage = "Quantity must be greater than 0";
             }
         }
-
         setQuantity(prev => ({ ...prev, value: newValue, error, errorMessage }));
     }, [voucherInfo]);
 
@@ -163,19 +157,16 @@ const AddItem = () => {
             error = true;
             errorMessage = "Special program requires Kilo (KG)";
         }
-
         setUnitMeasurement(prev => ({ ...prev, value, error, errorMessage }));
     }, [voucherInfo]);
 
     const handleChangeTotalAmount = useCallback((value: number | null) => {
         const newValue = value === null ? 0 : Math.abs(value);
-        const availableBalance = parseFloat(voucherInfo?.voucherRemainingBalance || '0') - parseFloat((cartTotalAmount || 0).toString());
-
         let error = false;
         let errorMessage = '';
 
         if (voucherInfo?.is_special === '1') {
-            if (availableBalance >= 1500) {
+            if (availableWalletBalance >= 1500) {
                 if (newValue > 1500) {
                     error = true;
                     errorMessage = "Amount should not exceed ₱1,500.00";
@@ -184,25 +175,22 @@ const AddItem = () => {
                     errorMessage = "Amount should not be lower than ₱1,500.00";
                 }
             } else {
-                if (newValue !== availableBalance) {
+                if (newValue !== availableWalletBalance) {
                     error = true;
-                    errorMessage = `Amount must match the precise balance: ₱${availableBalance.toFixed(2)}`;
+                    errorMessage = `Amount must match the precise balance: ₱${availableWalletBalance.toFixed(2)}`;
                 }
             }
-        } 
-        
-        // else {
-        //     if (newValue > availableBalance) {
-        //         error = true;
-        //         errorMessage = "Amount exceeds remaining balance";
-        //     }
-        // }
-
+        } else {
+            if (newValue > availableWalletBalance) {
+                error = true;
+                errorMessage = "Amount exceeds remaining balance";
+            }
+        }
         setTotalAmount(prev => ({ ...prev, value: newValue, error, errorMessage }));
-    }, [voucherInfo, cartTotalAmount]);
+    }, [voucherInfo, availableWalletBalance]);
 
-    // 4. Cart Serialization Dispatcher
-    const handleAddToCart = () => {
+    // 4. State Update and Back-Propagation Handler
+    const handleSaveChanges = () => {
         let countError = 0;
 
         if (!category.value) {
@@ -214,11 +202,11 @@ const AddItem = () => {
             countError++;
         }
         if (!quantity.value || quantity.value <= 0 || quantity.error) {
-            setQuantity(p => ({ ...p, error: true, errorMessage: p.errorMessage || " Quantity required!" }));
+            setQuantity(p => ({ ...p, error: true, errorMessage: p.errorMessage || "Quantity required!" }));
             countError++;
         }
         if (!unitMeasurement.value || unitMeasurement.error) {
-            setUnitMeasurement(p => ({ ...p, error: true, errorMessage: unitMeasurement.errorMessage || "Unit measurement is required!" }));
+            setUnitMeasurement(p => ({ ...p, error: true, errorMessage: unitMeasurement.errorMessage || "Unit required!" }));
             countError++;
         }
         if (!totalAmount.value || totalAmount.value <= 0 || totalAmount.error) {
@@ -231,14 +219,12 @@ const AddItem = () => {
             const unitShorthand: Record<string, string> = { "1": "(L)", "2": "(KG)", "3": "(G)", "4": "(ML)" };
             const displayUnit = unitShorthand[unitMeasurement.value] || unitMeasurement.value;
 
-            // Resolve the clean subcategory value or assign category title fallback
             const assignedSubName = checkCategoryHasSubCategory.includes(category.value) 
                 ? subCategory.value 
-                : voucherInfo.fertilizer_categories.find(c => c.value === category.value)?.label || "Item";
+                : voucherInfo?.fertilizer_categories?.find(c => c.value === category.value)?.label || "Item";
 
-            const serializedItem = {
+            const serializedEditedItem = {
                 name:                   assignedSubName,
-                categoryName:           voucherInfo.fertilizer_categories.find(c => c.value === category.value)?.label || "Commodity",
                 category:               category.value,
                 subCategory:            subCategory.value,
                 quantity:               quantity.value,
@@ -249,16 +235,20 @@ const AddItem = () => {
                 itemCategoryRemarks:    remarks.value.trim() || "None",
             };
 
-            console.log("[ADD ITEM SCREEN] Serialization payload generated:", serializedItem);
+            console.log("[EDIT ITEM SCREEN] Generating updated payload:", serializedEditedItem);
 
-            // Navigates backward to Cart, merging pure JSON data parameters natively
+            // ✅ Map updates directly across your historical array mapping using the original index 
+            const fullyUpdatedCartArray = cart.map((item, idx) => 
+                idx === commodityInfo.index ? serializedEditedItem : item
+            );
+
             setIsLoading(false);
+
+            // ✅ Back-propagate back into Checkout using modern parameters structures
             navigation.navigate({
-                name: ScreenNames.TRANSACTION_STACK.CART,
+                name: ScreenNames.TRANSACTION_STACK.CHECKOUT,
                 params: { 
-                    voucherInfo:     voucherInfo,      // Keeps your voucher profile alive in Cart's memory
-                    cart: cart,
-                    newItemFromForm: serializedItem    // Drops off the fresh JSON item data parcel
+                    updatedCartFromEdit: fullyUpdatedCartArray 
                 },
                 merge: true,
             });
@@ -269,12 +259,12 @@ const AddItem = () => {
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#009246" />
 
-            {/* HEADER DESIGN ROW LAYER */}
+            {/* HEADER DESIGN AREA */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Add Item Details</Text>
+                <Text style={styles.headerTitle}>Edit Item Details</Text>
                 <View style={styles.backPlaceholder} />
             </View>
 
@@ -286,7 +276,6 @@ const AddItem = () => {
                         Category <Text style={styles.asterisk}>*</Text>
                     </Text>
                     <Category
-                        // iconName="auto-awesome-mosaic"
                         placeholder="Select Category"
                         items={voucherInfo?.fertilizer_categories || []}
                         value={category.value}
@@ -296,24 +285,20 @@ const AddItem = () => {
                         onFocus={() => setCategory(p => ({ ...p, focus: true }))}
                         onBlur={() => setCategory(p => ({ ...p, focus: false }))}
                         onChangeValue={(val: any) => {
-                            // Clean resetting: clear sub-category value whenever the parent category changes
                             setCategory(p => ({ ...p, value: val, error: false, errorMessage: '' }));
                             setSubCategory(p => ({ ...p, value: '', error: false, errorMessage: '' }));
                         }}
                     />
                 </View>
 
-                {/* FIELD: MODAL SUB-CATEGORY SELECTOR DRAWER LIST */}
+                {/* FIELD: SUB-CATEGORY DROPDOWN DRAWER */}
                 {checkCategoryHasSubCategory.includes(category.value) && (
                     <View style={styles.formGroup}>
                         <Text style={styles.formLabel}>
                             Sub Category <Text style={styles.asterisk}>*</Text>
-                            </Text>
+                        </Text>
                         <TouchableOpacity 
-                            style={[
-                                styles.dropdownBox, 
-                                subCategory.error && { borderColor: '#D9383A' } // Fallback style indicator
-                            ]}
+                            style={[styles.dropdownBox, subCategory.error && { borderColor: '#D9383A' }]}
                             onPress={() => setClicked(!clicked)}
                             activeOpacity={0.7}
                         >
@@ -364,12 +349,11 @@ const AddItem = () => {
                                 </ScrollView>
                             </View>
                         )}
-                        {/* Display manual error message if validation catches missing sub-category selection */}
                         {subCategory.error && <Text style={styles.errorLabel}>{subCategory.errorMessage}</Text>}
                     </View>
                 )}
 
-                {/* ROW COMPONENT BLOCK: QUANTITY & UNIT ELEMENT SEGMENTS */}
+                {/* ROW SYSTEM BLOCK: QUANTITY & UNIT ELEMENT SEGMENTS */}
                 <View style={styles.flexRow}>
                     <View style={{ flex: 1, marginRight: 8 }}>
                         <Text style={styles.formLabel}>
@@ -377,7 +361,7 @@ const AddItem = () => {
                         </Text>
                         <AmountInput 
                             placeholder="Enter quantity"
-                            value={quantity.value} // FakeCurrencyInput handles numeric values directly
+                            value={quantity.value} 
                             isFocus={quantity.focus}
                             isError={quantity.error}
                             errorMessage={quantity.errorMessage}
@@ -385,7 +369,6 @@ const AddItem = () => {
                             onFocus={() => setQuantity(p => ({ ...p, focus: true }))}
                             onBlur={() => setQuantity(p => ({ ...p, focus: false }))}
                         />
-                        {/* Removed duplicate error text element here */}
                     </View>
 
                     <View style={{ flex: 1, marginLeft: 8 }}>
@@ -413,7 +396,7 @@ const AddItem = () => {
                     </Text>
                     <AmountInput 
                         placeholder="₱0.00"
-                        prefix="₱" // Added currency visual indicator safely
+                        prefix="₱" 
                         value={totalAmount.value}
                         isFocus={totalAmount.focus}
                         isError={totalAmount.error}
@@ -424,9 +407,9 @@ const AddItem = () => {
                     />
                 </View>
 
-                {/* FIELD: REMARKS */}
+                {/* FIELD: REMARKS TEXTAREA INPUT BOX */}
                 <View style={styles.formGroup}>
-                    <Text style={styles.formLabel}>Remarks </Text>
+                    <Text style={styles.formLabel}>Remarks (Optional)</Text>
                     <TextInput 
                         style={styles.inputField}
                         placeholder="Enter any remarks"
@@ -437,6 +420,7 @@ const AddItem = () => {
                 </View>
             </ScrollView>
 
+            {/* --- BOTTOM DOCK CONTROL STRIP CONTAINER --- */}
             <View style={styles.bottomDock}>
                 <View style={styles.dockRow}>
                     <Text style={styles.dockLabel}>Remaining Voucher Balance</Text>
@@ -451,14 +435,14 @@ const AddItem = () => {
                 
                 <TouchableOpacity 
                     style={styles.submitButton} 
-                    onPress={handleAddToCart}
+                    onPress={handleSaveChanges}
                     disabled={isLoading}
                 >
-                    <Text style={styles.submitButtonText}>ADD ITEM</Text>
+                    <Text style={styles.submitButtonText}>SAVE CHANGES</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 };
 
-export default AddItem;
+export default EditItem;

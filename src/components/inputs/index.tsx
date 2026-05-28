@@ -123,7 +123,7 @@ export const AmountInput = ({
 
     return (
         <View style={styles.wrapperContainer}>
-            {label && <Text style={styles.inputHeaderLabel}>{label}</Text>}
+            {/* {label && <Text style={styles.inputHeaderLabel}>{label}</Text>} */}
             
             <View style={styles.primaryContainer}>
                 <View>

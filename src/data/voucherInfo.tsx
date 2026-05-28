@@ -23,7 +23,7 @@ export const MOCK_VOUCHER_INFO: VoucherInfo = {
     geo_code: "037701006",
     intervention: "Fertilizer Discount Voucher",
     is_scanned: "1",
-    is_special: "1", // Triggers your special rules checks
+    is_special: "0", // Triggers your special rules checks
     last_name: "RITUAL",
     last_scanned_by_id: "c33e5d25-8361-4ab7-b090-788c8e254c7a",
     middle_name: "PALMERO",
@@ -66,22 +66,138 @@ export const MOCK_VOUCHER_INFO: VoucherInfo = {
 
     // 2. Used to quickly check if a category ID requires secondary selection
     getCheckCategoryHasSubCategory: [
-        { fertilizer_category_id: '1' },
-    ],
+            {
+                "fertilizer_category_id": "1"
+            },
+            {
+                "fertilizer_category_id": "6"
+            },
+            {
+                "fertilizer_category_id": "8"
+            },
+            {
+                "fertilizer_category_id": "9"
+            },
+            {
+                "fertilizer_category_id": "10"
+            },
+            {
+                "fertilizer_category_id": "11"
+            },
+            {
+                "fertilizer_category_id": "12"
+            },
+            {
+                "fertilizer_category_id": "13"
+            }
+        ],
 
     // 3. Sub-categories bound to their specific master category IDs
-    sub_categories: [
-        { fertilizer_category_id: '1', sub_category: 'Urea (46-0-0)' },
-        { fertilizer_category_id: '1', sub_category: 'Complete (14-14-14)' },
-        { fertilizer_category_id: '1', sub_category: 'Ammonium Sulfate (21-0-0)' },
-        { fertilizer_category_id: '1', sub_category: 'Compost Soil Amendment' },
-        { fertilizer_category_id: '1', sub_category: 'Vermicast Nutrient Pack' }
+    sub_categories: 
+    [
+        {
+            "fertilizer_sub_category_id": "1",
+            "fertilizer_category_id": "1",
+            "sub_category": "Complete (14-14-14)",
+            "program_item_sub_category_id": "2006",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "2",
+            "fertilizer_category_id": "1",
+            "sub_category": "Complete (16-16-16)",
+            "program_item_sub_category_id": "2007",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "3",
+            "fertilizer_category_id": "1",
+            "sub_category": "Urea - Prilled (46-0-0)",
+            "program_item_sub_category_id": "2008",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "4",
+            "fertilizer_category_id": "1",
+            "sub_category": "Urea - Granular (46-0-0)",
+            "program_item_sub_category_id": "2009",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "5",
+            "fertilizer_category_id": "1",
+            "sub_category": "Ammonium Sulfate (21-0-0)",
+            "program_item_sub_category_id": "2010",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "6",
+            "fertilizer_category_id": "1",
+            "sub_category": "Ammonium Phosphate (16-20-0)",
+            "program_item_sub_category_id": "2011",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "7",
+            "fertilizer_category_id": "1",
+            "sub_category": "Muriate of Potash (0-0-60)",
+            "program_item_sub_category_id": "2012",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "8",
+            "fertilizer_category_id": "1",
+            "sub_category": "Other grades",
+            "program_item_sub_category_id": "2013",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "260",
+            "fertilizer_category_id": "1",
+            "sub_category": "Great Planters 16-16-16 MOP (Agway Chemicals Corporation)",
+            "program_item_sub_category_id": "2014",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "268",
+            "fertilizer_category_id": "1",
+            "sub_category": "SC+ Dolomite Inorganic Fertilizer (Agway Chemicals Corporation)",
+            "program_item_sub_category_id": "2015",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "285",
+            "fertilizer_category_id": "1",
+            "sub_category": "Aljay Fertilizer Ammonium Sulfate 21-0-0 (Aljay Agro-Industrial Solutions, Incorporated)",
+            "program_item_sub_category_id": "2016",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        },
+        {
+            "fertilizer_sub_category_id": "377",
+            "fertilizer_category_id": "1",
+            "sub_category": "SureGrow Foliar Fertilizer (Best Agri and Agua Farm Solutions and Supply Corporation)",
+            "program_item_sub_category_id": "2017",
+            "program_id": "9cb1b3b9-1753-4b80-a7db-945da9a2ba36"
+        }
     ],
 
     // 4. Units list structure matching dropdown arrays
     unit_measurements: [
-        { label: 'Bags (50KG)', value: '1' },
-        { label: 'Kilo (KG)', value: '2' },
-        { label: 'Liters (L)', value: '3' }
+        {
+            "label": "Liter (L)",
+            "value": "1"
+        },
+        {
+            "label": "Kilo (KG)",
+            "value": "2"
+        },
+        {
+            "label": "Gram (G)",
+            "value": "3"
+        },
+        {
+            "label": "Milliliter (ML)",
+            "value": "4"
+        }
     ]
 };
