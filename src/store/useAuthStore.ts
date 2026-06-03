@@ -20,9 +20,9 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
-    isLoggedIn: false, // 👈 AppStack is watching this!
+    isLoggedIn: false, // AppStack is watching this!
 
-    // FIX: Ensure calling setAuth updates the user AND flips the login switch!
+    // Ensure calling setAuth updates the user AND flips the login switch!
     setAuth: (sessionData) => set({ 
         user: sessionData, 
         isLoggedIn: true 

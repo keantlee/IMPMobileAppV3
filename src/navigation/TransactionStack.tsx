@@ -10,8 +10,11 @@ import Cart from '../screens/transaction/voucher/cart';
 import AddItem from '../screens/transaction/voucher/addItem';
 
 import { MOCK_VOUCHER_INFO } from '../data/voucherInfo';
-import Checkout from '../screens/transaction/voucher/checkout';
+import Checkout from '../screens/transaction/voucher/reviewCart';
 import EditItem from '../screens/transaction/voucher/editItem';
+import ReviewTransactionScreen from '../screens/transaction/voucher/reviewTransacion';
+import ReviewCart from '../screens/transaction/voucher/reviewCart';
+import UploadConfirmationScreen from '../screens/confimation/uploadConfirmation';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type TransactionStackParamList = {
@@ -29,8 +32,8 @@ export const TransactionStackComponent: React.FC = () => {
                  // Native stack equivalent for clean fade transitions across operating systems
                  animation: 'fade_from_bottom' 
             }}
-            // initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
-            initialRouteName={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
+            initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
+            // initialRouteName={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
         >
             {/* Scan QR Screen */}
             <TransactionStack.Screen
@@ -42,11 +45,11 @@ export const TransactionStackComponent: React.FC = () => {
             <TransactionStack.Screen
                 component={FarmerProfile}
                 name={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
-                initialParams={{
-                    voucherInfo: MOCK_VOUCHER_INFO,
-                    cart: [],
-                    cartTotalAmount: 0
-                }}
+                // initialParams={{
+                //     voucherInfo: MOCK_VOUCHER_INFO,
+                //     cart: [],
+                //     cartTotalAmount: 0
+                // }}
             />
 
             {/* Cart Screen */}
@@ -69,13 +72,24 @@ export const TransactionStackComponent: React.FC = () => {
 
             {/* Checkout Screen */}
             <TransactionStack.Screen
-                component={Checkout}
-                name={ScreenNames.TRANSACTION_STACK.CHECKOUT}
+                component={ReviewCart}
+                name={ScreenNames.TRANSACTION_STACK.REVIEW_CART}
+            />
+
+            {/* Upload Confirmation Screen */}
+            <TransactionStack.Screen
+                component={UploadConfirmationScreen}
+                name={ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN}
             />
 
             {/* Review Transaction Screen */}
+            <TransactionStack.Screen
+                component={ReviewTransactionScreen}
+                name={ScreenNames.TRANSACTION_STACK.REVIEW_TRANSACTION}
+            />
 
             {/* Upload Attachment Screen */}
+            
         </TransactionStack.Navigator>
     );
 };

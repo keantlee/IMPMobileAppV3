@@ -28,8 +28,8 @@ const mockTransactions: IListItem[] = [
 
 const Home = ({ navigation }: HomeProps) => {
     const userProfile   = useAuthStore((state) => state.user);
-    const fullName      = userProfile?.fullName || 'Valued Supplier';
-    const supplierName  = userProfile?.supplierName || 'Merchant Main Office';
+    const fullName      = userProfile?.fullName;
+    const supplierName  = userProfile?.supplierName;
 
     const handleViewRegisteredPrograms = () => console.warn('View Registered Programs');
     const handleViewAccreditation      = () => console.warn('View Accreditation');
@@ -45,7 +45,7 @@ const Home = ({ navigation }: HomeProps) => {
                 paddingHorizontal: 20,
                 paddingTop: 16,
                 paddingBottom: 20,
-                backgroundColor: '#ffffff',
+                backgroundColor: '#009246',
                 borderBottomLeftRadius: 24,
                 borderBottomRightRadius: 24,
                 flexDirection: 'row',
@@ -58,13 +58,13 @@ const Home = ({ navigation }: HomeProps) => {
                 shadowRadius: 8
             }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#7F8C8D', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Welcome Back
                     </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '800', color: '#2C3E50', marginVertical: 2 }}>
+                    <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '800', color: '#ffffff', marginVertical: 2 }}>
                         {fullName}
                     </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 12, color: '#16A085', fontWeight: '600' }}>
+                    <Text numberOfLines={1} style={{ fontSize: 12, color: '#ffffff', fontWeight: '600' }}>
                         📍 {supplierName}
                     </Text>
                 </View>

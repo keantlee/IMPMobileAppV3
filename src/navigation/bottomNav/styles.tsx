@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
         // Keeping your custom font asset link cleanly
         fontFamily: 'Poppins-Regular', // Replace with your exact Font string if different
         fontSize: 12,                  // Standard, safe mobile font scale
-        fontWeight: '500',
+        fontWeight: '700',
         marginTop: 2,
     }
 });
