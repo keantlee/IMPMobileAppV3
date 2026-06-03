@@ -1,4 +1,4 @@
-import { Platform } from 'react-native'; // 👈 Add this import at the top of your file
+import { Platform } from 'react-native';
 
 export enum AppMode {
     LOCAL =         'LOCAL',
@@ -19,8 +19,8 @@ interface EnvironmentConfig {
 
 const ENDPOINTS: Record<AppMode, EnvironmentConfig> = {
     [AppMode.LOCAL]: {
-        apiHost:        `http://172.17.150.206:8080/api-v2/`,
-        apiAccessPoint: `http://172.17.150.206:8080/api-v2/`,
+        apiHost:        `http://172.17.151.132:8080/api-v2/`,
+        apiAccessPoint: `http://172.17.151.132:8080/api-v2/`,
     },
     [AppMode.DEVELOPMENT]: {
         apiHost:        'https://devsysadd.da.gov.ph/imp/api-v2/',

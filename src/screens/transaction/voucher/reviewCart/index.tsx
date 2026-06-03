@@ -6,40 +6,54 @@ import {
     TouchableOpacity,
     FlatList,
     BackHandler,
+    Modal,
+    ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
-// Global Typings & Navigation Strings
 import { VoucherInfo } from '../../../../@types/voucher';
 import ScreenNames from '../../../../navigation/screenNames';
 
 // Import custom external styles
 import { styles } from './styles';
+import { saveTransactionMutation } from '../../../../api/transaction';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { getSession } from '../../../../utils/session';
+import { renderAlertPng } from '../../../../assets/icons';
 
-interface CheckoutRouteParams {
+interface ReviewCartRouteParams {
     voucherInfo:            VoucherInfo;
     cart:                   any[];  
     timer?:                 number;
     updatedCartFromEdit?:   any[]; // Intercepts array updates safely from Edit Item screen
 }
 
-const Checkout = () => {
+const ReviewCart = () => {
     const navigation    = useNavigation<any>();
     const route         = useRoute<any>();
 
-    const routeParams   = (route.params || {}) as CheckoutRouteParams;
+    const routeParams   = (route.params || {}) as ReviewCartRouteParams;
     const { 
         voucherInfo, 
         cart: initialCart = [], 
         timer, 
     } = routeParams;
 
-    console.log('[CHECKOUT SCREEN] Incoming state snapshot params:', routeParams);
+    console.log('[REVIEW CART SCREEN] Incoming state params:', routeParams);
+
+    const transactionMutation = saveTransactionMutation(navigation);
 
     // 1. Core State Trackers
     const [cart, setCart]           = useState<any[]>(initialCart);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error' as 'error' | 'success'
+    });
 
     // 2. Financial Accumulators & Memoized Balances
     const cartTotalAmount = useMemo(() => {
@@ -69,12 +83,12 @@ const Checkout = () => {
         });
     }, [navigation, voucherInfo, cart, timer]);
 
-    // 4. Parameter Stream Event Listeners & Hardware Back Interceptors
+    // 4. useEffect - Intercept updates from Edit Item screen
     useEffect(() => {
         // Intercept updates traveling backward from Edit Item form screen safely
         if (route.params?.updatedCartFromEdit) {
             const synchronizedEditArray = route.params.updatedCartFromEdit;
-            console.log("[CHECKOUT SCREEN] Intercepted edited array package:", synchronizedEditArray);
+            console.log("[REVIEW CART SCREEN] Intercepted edited array package:", synchronizedEditArray);
             
             setCart(synchronizedEditArray);
 
@@ -83,6 +97,7 @@ const Checkout = () => {
         }
     }, [route.params?.updatedCartFromEdit]);
 
+    // 5. useEffect - Sync on hardware back button press
     useEffect(() => {
         const hardwareBackAction = () => {
             handleSyncAndGoBack();
@@ -93,7 +108,30 @@ const Checkout = () => {
         return () => backHandler.remove();
     }, [handleSyncAndGoBack]);
 
-    // 5. User Interaction Dispatch Methods
+    // Watch for server verification exceptions
+    useEffect(() => {
+        if (transactionMutation.isError) {
+            setAlertConfig({
+                visible: true,
+                title: 'Processing Failed',
+                message: transactionMutation.error?.message || 'An unexpected error occurred during transaction processing. Please try again.', 
+                type: 'error'
+            });
+        }
+    }, [transactionMutation.isError, transactionMutation.error]);
+
+    useEffect(() => {
+        if (transactionMutation.isSuccess && transactionMutation.data) {
+            setAlertConfig({
+                visible: true,
+                title: 'Success!',
+                message: transactionMutation.data.message || 'Transaction has been saved successfully.',
+                type: 'success'
+            });
+        }
+    }, [transactionMutation.isSuccess, transactionMutation.data]);
+
+    // 6. User Interaction Dispatch Methods
     const handleRemoveItem = useCallback((index: number) => {
         setCart((prevCart) => {
             const updatedCart = [...prevCart];
@@ -111,6 +149,7 @@ const Checkout = () => {
         });
     }, [navigation]);
 
+    // Edit item navigation with pre-calculated total amount excluding the target item for accurate balance display in Edit screen
     const goToEditItem = (item: any, index: number) => {
         // Total amount calculation for edit screen (excluding current item)
         const otherItemsTotal = cart.reduce((prev, curr, idx) => 
@@ -127,13 +166,15 @@ const Checkout = () => {
         });
     };
 
+    // Saving transaction handler - initiates the final checkout process and server mutation
     const handleCheckout = () => {
-        setIsLoading(true);
-        const checkoutParams = { voucherInfo, cart, timer };
-        console.log("[CHECKOUT SCREEN] Initiating pipeline processing package:", checkoutParams);
+        const checkoutParams = { voucherInfo, cart };
+
+        console.log("[REVIEW CART SCREEN] Payload:", checkoutParams);
         
-        // TODO: Import your functional checkout mutation logic hook directly here:
-        // checkout(checkoutParams, (val) => setIsLoading(val.isLoading), { navigation });
+        transactionMutation.mutate({ 
+            checkoutParams: checkoutParams 
+        });
     };
 
     // 6. Fragment Sub-Layout Splitting Blocks
@@ -244,19 +285,78 @@ const Checkout = () => {
                     </Text>
                 </View>
 
+                {/* Action Submit Button */}
+                {/* We need to add activity indicator */}
                 <TouchableOpacity
-                    style={[styles.checkoutButton, cart.length === 0 && styles.disabledCheckout]}
+                    style={[
+                        styles.checkoutButton, 
+                        (cart.length === 0 || transactionMutation.isPending) && styles.disabledCheckout
+                    ]}
                     onPress={handleCheckout}
-                    disabled={cart.length === 0 || isLoading}
+                    disabled={cart.length === 0 || transactionMutation.isPending}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.checkoutButtonText}>
-                        {isLoading ? "Processing..." : "CONFIRM CHECKOUT"}
-                    </Text>
+                    {transactionMutation.isPending ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+                            <Text style={styles.checkoutButtonText}>PROCESSING...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.checkoutButtonText}>SAVE TRANSACTION</Text>
+                    )}
                 </TouchableOpacity>
             </View>
+
+            {/* Status Alert feedback Modal */}
+            <Modal
+                visible={alertConfig.visible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setAlertConfig(p => ({ ...p, visible: false }))}
+            >
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                    <View style={{ backgroundColor: '#FFFFFF', width: '100%', borderRadius: 12, padding: 20, alignItems: 'center', elevation: 10 }}>
+                        <View style={{ marginBottom: 16 }}>
+                            {renderAlertPng(alertConfig.type)}
+                        </View>
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#2C3E50', marginTop: 12, marginBottom: 8 }}>
+                            {alertConfig.title}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: '#7F8C8D', textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
+                            {alertConfig.message}
+                        </Text>
+                        <TouchableOpacity
+                            style={{ 
+                                backgroundColor: alertConfig.type === 'success' ? '#009246' : '#2C3E50', 
+                                paddingVertical: 12, 
+                                width: '100%', 
+                                borderRadius: 8, 
+                                alignItems: 'center' 
+                            }}
+                            onPress={() => {
+                                setAlertConfig(p => ({ ...p, visible: false }));
+                                
+                                if (alertConfig.type === 'success') {
+                                    // Let mutationFn handle forwarding logic safely, close fallback handles cleanly here
+                                    navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
+                                        serverMessage:  transactionMutation.data?.message,
+                                        transactionId:  transactionMutation.data?.transaction_id,
+                                        referenceNo:    voucherInfo?.reference_no,
+                                        voucherId:      voucherInfo?.voucher_id,
+                                        rsbsaNo:        voucherInfo?.rsbsa_no,
+                                    });
+                                }
+                            }}
+                        >
+                            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>
+                                {alertConfig.type === 'success' ? 'CONTINUE' : 'TRY AGAIN'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
 
-export default Checkout;
+export default ReviewCart;

@@ -113,23 +113,23 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ navigation }) => {
                     tabBarShowLabel: true,       
                     tabBarLabel: 'Scan QR',             
                     tabBarIcon: () => (
-                        <AppIcons.MaterialIcons name="qrcode-scan" size={24} color={staticIconColor} />
+                        <AppIcons.MaterialIcons name="qr-code-scanner" size={30} color={staticIconColor} />
                     )
                 }}
             />
 
             {/* USER PROFILE TAB SCREEN */}
-            {/* <BottomTab.Screen 
+            <BottomTab.Screen 
                 name={ScreenNames.BOTTOM_TABS.PROFILE as any}
                 component={ProfileStackComponents}
-                options={{             // ✅ FIX HERE TOO for when you uncomment later
+                options={{             
                     tabBarShowLabel: true,
                     tabBarLabel: 'Profile',      
                     tabBarIcon: () => (
-                        <AppIcons.Octicons name="person-fill" size={24} color={staticIconColor} />
+                        <AppIcons.MaterialIcons name="person" size={30} color={staticIconColor} />
                     )
                 }}
-            /> */}
+            />
         </BottomTab.Navigator>
     );
 };
