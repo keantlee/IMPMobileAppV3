@@ -101,7 +101,7 @@ const Cart = () => {
         if (cart.length === 0) return;
 
         // REMOVED: handleUpdateCart callback function parameter
-        navigation.navigate(ScreenNames.TRANSACTION_STACK.CHECKOUT, {
+        navigation.navigate(ScreenNames.TRANSACTION_STACK.REVIEW_CART, {
             voucherInfo,
             cart,
             timer,

@@ -6,7 +6,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { POST, GET } from "./config/axios";
 import ScreenNames from '../navigation/screenNames';
 import EndPoints from './config/endpoints';
-import { SubCategory, UnitMeasurement, FertilizerCategory, CheckCategoryHasSubCategory, VoucherInfo } from '../@types/voucher';
+import { VoucherInfo } from '../@types/voucher';
 
 interface ScanVoucherPayload {
   voucherCode: string;
@@ -28,6 +28,8 @@ export const scanVoucherMutation = () => {
         if(!netState.isConnected || !netState.isInternetReachable) {
             throw new Error('[Scan Voucher Mutation] No internet connection found.');
         }
+
+        const authState   = useAuthStore.getState();
 
         console.log('[Scan Voucher Mutation] Incoming payload target code:', payload.voucherCode);
 
@@ -53,6 +55,88 @@ export const scanVoucherMutation = () => {
     },
     onError: (error: Error) => {
         console.warn('[Scan Voucher Mutation] TanStack Exception Tracker:', error.message);
+    }
+  });
+};
+
+
+// Payload from ReviewCart Screen - this is the unified package that the screen will send to the mutation for processing
+interface SaveTransactionPayload {
+  checkoutParams: {
+    voucherInfo:  VoucherInfo;
+    cart:         any[];
+  };
+}
+
+// Response expected from the server after processing the save transaction request - this is what the mutation will receive in its onSuccess handler
+export interface SaveResponsePayload {
+  status:  boolean;
+  message: string;
+  transaction_id: string | number;
+}
+
+// save_transaction
+export const saveTransactionMutation = (navigation: any) => {
+  return useMutation<SaveResponsePayload, Error, SaveTransactionPayload>({ 
+    mutationFn: async (payload) => {
+        const netState = await NetInfo.fetch();
+
+        if (!netState.isConnected || !netState.isInternetReachable) {
+            throw new Error('No internet connection found. Please check your network and try again.');
+        }
+
+        const userProfile   = useAuthStore.getState().user;
+        
+        const userId        = userProfile?.userId;
+        const fullName      = userProfile?.fullName;
+        const supplierName  = userProfile?.supplierName;
+
+        console.log('[SAVE TRANSACTION MUTATION] Raw incoming package observed:', payload);
+
+        console.log('[SAVE TRANSACTION MUTATION] Extracted state from Zustand:', { userId, fullName, supplierName });
+
+        const cleanCart = payload.checkoutParams.cart.map((item) => ({
+            sub_id:              item.sub_id,                                      
+            category:            item.category,
+            categoryName:        item.categoryName,
+            subCategory:         item.subCategory ,
+            quantity:            parseFloat(item.quantity),
+            unitMeasurement:     item.unitMeasurement,            
+            totalAmount:         parseFloat(item.totalAmount),
+            cashAdded:           parseFloat(item.cashAdded),
+            itemCategoryRemarks: item.itemCategoryRemarks
+        }));
+
+        const verifiedTotalTransactionCost = cleanCart.reduce(
+            (prev, current) => prev + current.totalAmount, 0
+        ).toFixed(2);
+
+        const cleanPayload = {
+            voucherInfo:              payload.checkoutParams.voucherInfo,
+            userId:                   userId,
+            fullName:                 fullName,
+            supplierName:             supplierName,
+            cart:                     cleanCart,
+            transactionTotalAmount:   verifiedTotalTransactionCost,
+        };
+
+        console.log('[SAVE TRANSACTION MUTATION] Payload:', cleanPayload);
+
+        const response = await POST<SaveResponsePayload>(EndPoints.SAVE_TRANSACTION, cleanPayload);
+        if (response.status !== true) {
+            throw new Error(response.message || 'The database rejected this transaction update snapshot.');
+        }
+
+        return response;
+    },
+    onSuccess: (serverData) => {
+        console.log('[SAVE TRANSACTION MUTATION] Server pipeline successfully completed code execution:', serverData);
+        
+        // Note: Navigation is handled by the ReviewCart screen's success modal 
+        // to allow the user to see the confirmation message before moving forward.
+    },
+    onError: (error: Error) => {
+        console.warn('[SAVE TRANSACTION MUTATION] Critical transmission exception encountered:', error.message);
     }
   });
 };

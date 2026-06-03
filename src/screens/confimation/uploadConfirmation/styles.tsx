@@ -1,0 +1,83 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F8F9FA',
+    },
+    contentWrapper: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 28,
+    },
+    iconContainer: {
+        marginBottom: 20,
+        backgroundColor: '#E8F5E9',
+        padding: 16,
+        borderRadius: 50,
+    },
+    successTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#2C3E50',
+        marginBottom: 12,
+    },
+    serverNotificationText: {
+        fontSize: 14,
+        color: '#009246',
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: 16,
+        backgroundColor: '#E8F5E9',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    infoDescription: {
+        fontSize: 15,
+        color: '#34495E',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 12,
+        fontWeight: '600',
+    },
+    warningDescription: {
+        fontSize: 13,
+        color: '#7F8C8D',
+        textAlign: 'center',
+        lineHeight: 18,
+        marginBottom: 32,
+    },
+    primaryUploadButton: {
+        flexDirection: 'row',
+        backgroundColor: '#009246', 
+        width: '100%',
+        height: 50,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+        elevation: 2,
+    },
+    primaryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    secondaryLaterButton: {
+        width: '100%',
+        height: 50,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#BDC3C7',
+        backgroundColor: '#FFFFFF',
+    },
+    secondaryButtonText: {
+        color: '#5D6D7E',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+});
