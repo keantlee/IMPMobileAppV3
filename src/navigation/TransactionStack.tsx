@@ -10,11 +10,13 @@ import Cart from '../screens/transaction/voucher/cart';
 import AddItem from '../screens/transaction/voucher/addItem';
 
 import { MOCK_VOUCHER_INFO } from '../data/voucherInfo';
+import { MOCK_UPLOAD_ATTACHMENTS } from '../data/attachments';
 import Checkout from '../screens/transaction/voucher/reviewCart';
 import EditItem from '../screens/transaction/voucher/editItem';
 import ReviewTransactionScreen from '../screens/transaction/voucher/reviewTransacion';
 import ReviewCart from '../screens/transaction/voucher/reviewCart';
 import UploadConfirmationScreen from '../screens/confimation/uploadConfirmation';
+import UploadAttachment from '../screens/transaction/voucher/uploadAttachment';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type TransactionStackParamList = {
@@ -32,8 +34,9 @@ export const TransactionStackComponent: React.FC = () => {
                  // Native stack equivalent for clean fade transitions across operating systems
                  animation: 'fade_from_bottom' 
             }}
-            initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
+            // initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
             // initialRouteName={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
+            initialRouteName={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
         >
             {/* Scan QR Screen */}
             <TransactionStack.Screen
@@ -82,13 +85,14 @@ export const TransactionStackComponent: React.FC = () => {
                 name={ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN}
             />
 
-            {/* Review Transaction Screen */}
-            <TransactionStack.Screen
-                component={ReviewTransactionScreen}
-                name={ScreenNames.TRANSACTION_STACK.REVIEW_TRANSACTION}
-            />
-
             {/* Upload Attachment Screen */}
+            <TransactionStack.Screen
+                component={UploadAttachment}
+                name={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
+                initialParams={{
+                    uploadAttachments: MOCK_UPLOAD_ATTACHMENTS,
+                }}
+            />
             
         </TransactionStack.Navigator>
     );
