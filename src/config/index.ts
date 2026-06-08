@@ -11,16 +11,24 @@ interface EnvironmentConfig {
     apiAccessPoint: string;
 }
 
-// 1. Dynamically target the right local loopback ip depending on the runtime platform
-// const localIp = Platform.OS === 'android' ? '10.0.2.2' : '127.0.0.1';
+/**
+ *  Dynamically target the right local loopback ip depending on the runtime platform
+ *  [Note: This is only used if using VPN.]
+ *  android studio IP:  10.0.2.2    
+ *  local mobile IP:    0.0.0.0 
+ *  Backend laravel: php artisan serve --host=0.0.0.0 --port=8000
+ *  Terminal: adb reverse tcp:8000 tcp:8000
+ */
+// const localIp = Platform.OS === 'android' ? '10.0.2.2:8000' : '0.0.0.0:8000';
+const localIp = '172.17.151.147:8080';
 
 // Note: If you run your local PHP/Laravel server on a specific port (like :8000), append it here:
 // const localIp = Platform.OS === 'android' ? '10.0.2.2:8000' : '127.0.0.1:8000';
 
 const ENDPOINTS: Record<AppMode, EnvironmentConfig> = {
     [AppMode.LOCAL]: {
-        apiHost:        `http://172.17.151.132:8080/api-v2/`,
-        apiAccessPoint: `http://172.17.151.132:8080/api-v2/`,
+        apiHost:        `http://${localIp}/api-v2/`,
+        apiAccessPoint: `http://${localIp}/api-v2/`,
     },
     [AppMode.DEVELOPMENT]: {
         apiHost:        'https://devsysadd.da.gov.ph/imp/api-v2/',
