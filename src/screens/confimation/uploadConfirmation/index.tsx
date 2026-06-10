@@ -15,11 +15,13 @@ import { styles } from './styles';
 import { renderAlertPng } from '../../../assets/icons';
 
 interface UploadRouteParams {
-    serverMessage?: string;
-    transactionId?: string | number;
-    referenceNo?:   string;
-    voucherId?:     string | number;
-    rsbsaNo?:       string;
+    serverMessage?:     string;
+    transactionId?:     string;
+    referenceNo?:       string;
+    voucherId?:         string;
+    rsbsaNo?:           string;
+    supplierId?:        string;
+    shortname?:         string
 }
 
 const UploadConfirmationScreen = () => {
@@ -31,10 +33,12 @@ const UploadConfirmationScreen = () => {
         transactionId, 
         referenceNo, 
         voucherId, 
-        rsbsaNo 
+        rsbsaNo, 
+        supplierId,
+        shortname 
     } = (route.params || {}) as UploadRouteParams;
 
-    console.log("[UPLOAD CONFIRMATION SCREEN] Metadata Received:", { transactionId, referenceNo, rsbsaNo });
+    console.log("[UPLOAD CONFIRMATION SCREEN] route parameters:", { transactionId, referenceNo, rsbsaNo, supplierId, shortname });
 
     // Anti-Back-Loop Safety Net: Block hardware back button completely on success screen
     useEffect(() => {
@@ -51,16 +55,19 @@ const UploadConfirmationScreen = () => {
         console.warn("[UPLOAD CONFIRMATION SCREEN] Navigating to Upload Attachments Screen...");
         
         navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
-            transactionId,
+            voucherId,
+            rsbsaNo,
             referenceNo,
-            voucherId
+            transactionId,
+            supplierId,
+            shortname
         }); 
     };
 
-    const handleUploadLater = () => {
-        console.warn("[UPLOAD CONFIRMATION SCREEN] Postponing submission. Returning to Home Screen.");
-        navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
-    };
+    // const handleUploadLater = () => {
+    //     console.warn("[UPLOAD CONFIRMATION SCREEN] Postponing submission. Returning to Home Screen.");
+    //     navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+    // };
 
     return (        
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
@@ -81,12 +88,16 @@ const UploadConfirmationScreen = () => {
                 )}
 
                 <Text style={styles.infoDescription}>
-                    To complete the transaction process fully, please upload the required verification attachments.
+                    To complete the transaction process fully, please upload the required verification attachments. 
                 </Text> 
-                
+
                 <Text style={styles.warningDescription}>
-                    If you want to upload them later, this record will be marked as <Text style={{fontWeight: '700', color: '#E67E22'}}>Pending</Text> until your attachments are submitted.
+                    If you did not complete the uploading of attachment process. This transaction will be marked as <Text style={{fontWeight: '700', color: '#E67E22'}}>Pending</Text> until your attachments are submitted.
                 </Text>  
+
+                {/* <Text style={styles.warningDescription}>
+                    If you want to upload them later, this record will be marked as <Text style={{fontWeight: '700', color: '#E67E22'}}>Pending</Text> until your attachments are submitted.
+                </Text>   */}
 
                 {/* ACTION TRIGGER BUTTONS */}
                 <TouchableOpacity
@@ -98,13 +109,13 @@ const UploadConfirmationScreen = () => {
                     <Text style={styles.primaryButtonText}>Continue Uploading Now</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     style={styles.secondaryLaterButton}
                     onPress={handleUploadLater}
                     activeOpacity={0.7}
                 >
                     <Text style={styles.secondaryButtonText}>Upload Later / Back to Home</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
         </SafeAreaView>
     );

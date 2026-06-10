@@ -70,9 +70,9 @@ interface SaveTransactionPayload {
 
 // Response expected from the server after processing the save transaction request - this is what the mutation will receive in its onSuccess handler
 export interface SaveResponsePayload {
-  status:  boolean;
-  message: string;
-  transaction_id: string | number;
+  status:         boolean;
+  message:        string;
+  transaction_id: string;
 }
 
 // save_transaction
@@ -137,6 +137,73 @@ export const saveTransactionMutation = (navigation: any) => {
     },
     onError: (error: Error) => {
         console.warn('[SAVE TRANSACTION MUTATION] Critical transmission exception encountered:', error.message);
+    }
+  });
+};
+
+export interface SaveAttachmentPayload {
+  attachmentParams: {
+    beneficiary:    any;
+    frontID:        any;
+    backID:         any;
+    receipt:        any;
+    otherDocs:      any[];
+    rsbsa_no:       string;
+    reference_no:   string;
+    supplier_id:    string;
+    transaction_id: string;
+    voucher_id:     string;
+    shortname:      string;
+  }
+}
+
+export interface SaveAttachmentResponsePayload {
+  status: boolean;
+  message: string;
+}
+
+// save_attachment 
+export const saveAttachmentMutation = (navigation: any) => {
+  return useMutation<SaveAttachmentResponsePayload, Error, SaveAttachmentPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if (!netState.isConnected || !netState.isInternetReachable) {
+          throw new Error("No internet connection found. Please check your network and try again.");
+      }
+
+      console.log("[SAVE ATTACHMENT MUTATION] payload: ", payload);
+
+      // Construct a clean, perfectly spelled payload mapping matching your Laravel keys
+      const cleanPayload = {
+        beneficiary:    payload.attachmentParams.beneficiary, 
+        frontID:        payload.attachmentParams.frontID,
+        backID:         payload.attachmentParams.backID,
+        receipt:        payload.attachmentParams.receipt,
+        otherDocs:      payload.attachmentParams.otherDocs,
+        rsbsa_no:       payload.attachmentParams.rsbsa_no,
+        reference_no:   payload.attachmentParams.reference_no,
+        supplier_id:    payload.attachmentParams.supplier_id,
+        transaction_id: payload.attachmentParams.transaction_id,
+        voucher_id:     payload.attachmentParams.voucher_id,
+        shortname:      payload.attachmentParams.shortname, 
+      };
+
+      console.log("[SAVE ATTACHMENT MUTATION] clean payload: ", cleanPayload);
+
+      const response = await POST<SaveAttachmentResponsePayload>(EndPoints.SAVE_ATTACHMENT, cleanPayload);
+
+      if (response.status !== true) {
+          throw new Error(response.message || 'The database rejected this transaction update snapshot.');
+      }
+
+      return response;
+    },
+    onSuccess: (serverData) => {
+        console.log('[SAVE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
+    },
+    onError: (error: Error) => {
+        console.warn('[SAVE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
     }
   });
 };
