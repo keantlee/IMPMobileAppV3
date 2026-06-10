@@ -10,6 +10,7 @@ const EndPoints = {
   CHECK_APP_VERSION:                    'check-app-version-authentication',
   SCAN_QR_CODE:                         'scan-qr-code',
   SAVE_TRANSACTION:                     'save-transaction',
+  SAVE_ATTACHMENT:                      'save-attachment',
   SEND_RESET_PASSWORD_LINK:             'form_reset_password_link/sending_request',
   SEARCH_VOUCHER:                       'search-voucher',
   UPDATE_ATTACHMENTS:                   'update-attachments',
