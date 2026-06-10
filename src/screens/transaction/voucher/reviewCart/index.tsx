@@ -339,11 +339,13 @@ const ReviewCart = () => {
                                 if (alertConfig.type === 'success') {
                                     // Let mutationFn handle forwarding logic safely, close fallback handles cleanly here
                                     navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
-                                        serverMessage:  transactionMutation.data?.message,
-                                        transactionId:  transactionMutation.data?.transaction_id,
-                                        referenceNo:    voucherInfo?.reference_no,
-                                        voucherId:      voucherInfo?.voucher_id,
-                                        rsbsaNo:        voucherInfo?.rsbsa_no,
+                                        serverMessage:      transactionMutation.data?.message,
+                                        transactionId:      transactionMutation.data?.transaction_id,
+                                        referenceNo:        voucherInfo?.reference_no,
+                                        voucherId:          voucherInfo?.voucher_id,
+                                        rsbsaNo:            voucherInfo?.rsbsa_no,
+                                        supplierId:         transactionMutation?.supplier_id,
+                                        programShortname:   transactionMutation?.program_shortname
                                     });
                                 }
                             }}

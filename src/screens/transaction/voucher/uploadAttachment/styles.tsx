@@ -214,9 +214,11 @@ export const styles = StyleSheet.create({
     },
     lightboxOverlay: {
         flex: 1,
-        backgroundColor: '#000000',
+        // The 0.75 value dims your screen context beautifully without fully hiding it
+        backgroundColor: 'rgba(0, 0, 0, 0.4)', 
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 24
     },
     lightboxCloseButton: {
         position: 'absolute',

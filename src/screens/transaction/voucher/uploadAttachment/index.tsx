@@ -10,7 +10,8 @@ import {
     Modal,
     Pressable,
     ScrollView,
-    Alert
+    Alert,
+    ActivityIndicator // Added for explicit loading indicators
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -19,22 +20,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchCamera, launchImageLibrary, Asset, PhotoQuality } from 'react-native-image-picker';
 
-import { AttachmentSchema, AttachmentFormData } from '../../../../types/schemas/AttachmentSchema';
+import { AttachmentSchema, AttachmentFormData, AttachmentInputData } from '../../../../types/schemas/AttachmentSchema';
 import ScreenNames from '../../../../navigation/screenNames';
 import { styles } from './styles';
 import { UploadAttachments } from '../../../../@types/attachment';
+import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase64';
+import { saveAttachmentMutation } from '../../../../api/transaction';
 
 interface TransactionRouteParams {
     uploadAttachments: UploadAttachments;  
 }
 
-// Layout helper mapping matrix for fixed document slot items
-interface FixedSlotConfig {
+interface FormFieldType {
     key: keyof Omit<AttachmentFormData, 'otherDocs'>;
     label: string;
 }
 
-const FIXED_SLOTS: FixedSlotConfig[] = [
+const attachmetFormData: FormFieldType[] = [
     { key: 'beneficiary', label: 'Beneficiary with Commodity' },
     { key: 'frontID',     label: 'Front Valid ID' },
     { key: 'backID',      label: 'Back Valid ID' },
@@ -48,32 +50,34 @@ const UploadAttachment = () => {
     const routeParams           = (route.params || {}) as TransactionRouteParams;
     const { uploadAttachments } = routeParams;
 
-    console.log('[UPLOAD ATTACHMENT SCREEN] Incoming parameters structure:', routeParams);
+    const attachmentMutation = saveAttachmentMutation(navigation);
 
-    // 1. Centralized Form Engine Controller Initialization
-    const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<AttachmentFormData>({ 
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error' as 'error' | 'success'
+    });
+
+    const { control, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<AttachmentInputData>({ 
         resolver: zodResolver(AttachmentSchema),
         defaultValues: {
-            beneficiary:    undefined,
-            frontID:        undefined,
-            backID:         undefined,
-            receipt:        undefined,
+            beneficiary:    null,
+            frontID:        null,
+            backID:         null,
+            receipt:        null,
             otherDocs:      [],
         }
     });
 
-    // Watchers for immediate real-time layout rendering evaluation updates
     const currentFormValues = watch();
 
-    // 2. Active Selection Overlay Management States
     const [activeSelector, setActiveSelector] = useState<{ fieldName: keyof AttachmentFormData; mode: 'fixed' | 'array' } | null>(null);
     const [lightboxUri, setLightboxUri] = useState<string | null>(null);
 
-    // 3. Image Picker Camera/Gallery Selection Hooks
     const triggerImagePicker = async (source: 'camera' | 'gallery') => {
         if (!activeSelector) return;
 
-        // Flatten the options object so properties sit at the top level
         const options = {
             mediaType: 'photo' as const,
             quality: 0.75 as PhotoQuality,
@@ -83,12 +87,9 @@ const UploadAttachment = () => {
             includeBase64: false,
         };
 
-        // Correctly await the method execution
         const result = source === 'camera' 
             ? await launchCamera(options) 
             : await launchImageLibrary(options);
-
-        console.log("[UPLOAD ATTACHMENTS] picker result:", result);
 
         const targetSelection = activeSelector;
         setActiveSelector(null);
@@ -120,33 +121,100 @@ const UploadAttachment = () => {
         setValue('otherDocs', cleanFilteredSet, { shouldValidate: true });
     };
 
-    // 4. Submit Verification Method Handler
-    const onSubmit = (data: AttachmentFormData) => {
-        console.log("[UPLOAD ATTACHMENT] Form payload structurally validated by Zod schema:", data);
+    // --- FIX FOR MUTATION RESPONSE HOOK WATCHERS ---
+    useEffect(() => {
+        if (attachmentMutation.isError) {
+            setAlertConfig({
+                visible: true,
+                title: 'Failed to Upload',
+                message: attachmentMutation.error?.message || 'An unexpected error occurred during uploading processing. Please try again.', 
+                type: 'error'
+            });
+        }
+    }, [attachmentMutation.isError, attachmentMutation.error]);
+
+    useEffect(() => {
+        if (attachmentMutation.isSuccess && attachmentMutation.data) {
+            setAlertConfig({
+                visible: true,
+                title: 'Success!',
+                message: attachmentMutation.data.message || 'Verification materials saved successfully.',
+                type: 'success'
+            });
+        }
+    }, [attachmentMutation.isSuccess, attachmentMutation.data]);
+
+    // Handle dismissing custom modal completely and clearing stale mutation variables
+    const handleCloseAlertModal = () => {
+        setAlertConfig(prev => ({ ...prev, visible: false }));
         
-        Alert.alert(
-            "Upload Complete",
-            "Are you sure you want to finalize and save these verification documents?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Yes, Upload",
-                    onPress: () => {
-                        // Place your RTK Query/TanStack mutation action trigger logic package here.
-                        Alert.alert("Success", "Transaction materials uploaded successfully.", [
-                            { text: "OK", onPress: () => navigation.navigate(ScreenNames.BOTTOM_TABS.HOME) }
-                        ]);
-                    }
-                }
-            ]
-        );
+        if (alertConfig.type === 'success') {
+            reset();
+            attachmentMutation.reset();
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+        } else {
+            attachmentMutation.reset(); // Allows user to retry submitting cleanly
+        }
     };
 
-    // 5. Back Navigation Controllers
+    const onSubmit = async (data: AttachmentFormData) => {
+        let isMounted = true; 
+
+        try {
+            const beneficiaryPayload    = await converImageToBase64(data.beneficiary);
+            const frontIDPayload        = await converImageToBase64(data.frontID);
+            const backIDPayload         = await converImageToBase64(data.backID);
+            const receiptPayload        = await converImageToBase64(data.receipt);
+            const otherDocsPayload      = await Promise.all(
+                data.otherDocs.map(file => converImageToBase64(file))
+            );
+
+            if (!isMounted) return; // Break routine execution if component unmounted midway
+
+            const attachmentParams = {
+                beneficiary: {
+                    ...beneficiaryPayload, 
+                    name: 'Beneficiary with Commodity' 
+                },
+                frontID: {
+                    ...frontIDPayload,
+                    name: 'Front Valid ID'
+                },
+                backID: {
+                    ...backIDPayload,
+                    name: 'Back Valid ID'
+                },
+                receipt: {
+                    ...receiptPayload,
+                    name: 'Receipt'
+                },
+                otherDocs: {
+                    ...otherDocsPayload,
+                    name: 'Other documents'
+                },
+                rsbsa_no:       uploadAttachments.rsbsa_no,
+                reference_no:   uploadAttachments.reference_no,
+                supplier_id:    uploadAttachments.supplier_id,
+                transaction_id: uploadAttachments.transaction_id,
+                voucher_id:     uploadAttachments.voucher_id,
+                shortname:      uploadAttachments.shortname,
+            };
+
+            attachmentMutation.mutate({ attachmentParams });
+        } catch (error) {
+            if (isMounted) {
+                Alert.alert("Upload Failed", "An error occurred while compiling your images.");
+            }
+        }
+
+        return () => { isMounted = false; };
+    };
+
     const handleSyncAndGoBack = useCallback(() => {
-        // When back to home reset the form
+        reset();
+        attachmentMutation.reset();
         navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
-    }, [navigation]);
+    }, [navigation, reset]);
 
     useEffect(() => {
         const hardwareBackAction = () => {
@@ -157,7 +225,6 @@ const UploadAttachment = () => {
         return () => backHandler.remove();
     }, [handleSyncAndGoBack]);
 
-    // 6. Fragment Sub-Layout Elements Rendering Blocks
     const renderHeader = () => (
         <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={handleSyncAndGoBack} activeOpacity={0.7}>
@@ -168,7 +235,7 @@ const UploadAttachment = () => {
         </View>
     );
 
-    const renderFixedSlotRow = ({ item }: { item: FixedSlotConfig }) => {
+    const renderRequiredAttachments = ({ item }: { item: FormFieldType }) => {
         const errorObject = errors[item.key];
 
         return (
@@ -182,7 +249,7 @@ const UploadAttachment = () => {
                                 {item.label} <Text style={styles.asterisk}>*</Text>
                             </Text>
                             <Text style={[styles.slotStatus, value && { color: '#009246', fontWeight: '600' }]}>
-                                {value ? "✓ Ready to submit" : "No attachment uploaded"}
+                                {value ? "✓ Ready to submit" : "No selected attachment"}
                             </Text>
                             {errorObject?.message && (
                                 <Text style={styles.errorFieldMessage}>{String(errorObject.message)}</Text>
@@ -202,6 +269,7 @@ const UploadAttachment = () => {
                             <TouchableOpacity 
                                 style={styles.uploadTriggerButton}
                                 onPress={() => setActiveSelector({ fieldName: item.key, mode: 'fixed' })}
+                                disabled={attachmentMutation.isPending}
                             >
                                 <MaterialIcons name="add-a-photo" size={22} color="#009246" />
                             </TouchableOpacity>
@@ -218,8 +286,8 @@ const UploadAttachment = () => {
             {renderHeader()}
 
             <FlatList
-                data={FIXED_SLOTS}
-                renderItem={renderFixedSlotRow}
+                data={attachmetFormData}
+                renderItem={renderRequiredAttachments}
                 keyExtractor={(item) => item.key}
                 contentContainerStyle={styles.scrollContainer}
                 ListFooterComponent={
@@ -230,12 +298,13 @@ const UploadAttachment = () => {
                             <TouchableOpacity 
                                 style={styles.addOtherButtonCard}
                                 onPress={() => setActiveSelector({ fieldName: 'otherDocs', mode: 'array' })}
+                                disabled={attachmentMutation.isPending}
                             >
                                 <MaterialIcons name="note-add" size={24} color="#7F8C8D" />
                                 <Text style={styles.addOtherText}>Add Photo</Text>
                             </TouchableOpacity>
 
-                            {(currentFormValues.otherDocs || []).map((file: any, index: number) => (
+                            {(currentFormValues.otherDocs || []).map((file, index: number) => (
                                 <View key={index} style={styles.otherThumbnailWrapper}>
                                     <TouchableOpacity onPress={() => setLightboxUri(file.uri || null)}>
                                         <Image source={{ uri: file.uri }} style={styles.otherThumbnail} />
@@ -250,19 +319,41 @@ const UploadAttachment = () => {
                 }
             />
 
-            {/* --- FIXED SUBMIT ACTION BOTTOM STRIP BAR --- */}
             <View style={styles.bottomDock}>
                 <TouchableOpacity 
-                    style={styles.submitButton}
+                    style={[styles.submitButton, attachmentMutation.isPending && { backgroundColor: '#A2D9B7' }]}
                     onPress={handleSubmit(onSubmit)}
                     activeOpacity={0.8}
+                    disabled={attachmentMutation.isPending}
                 >
-                    <MaterialIcons name="cloud-upload" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.submitButtonText}>UPLOAD</Text>
+                    {attachmentMutation.isPending ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <>
+                            <MaterialIcons name="cloud-upload" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                            <Text style={styles.submitButtonText}>UPLOAD</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
 
-            {/* --- CAPTURE MODAL MEDIA SOURCE ACTIONS SELECTION SHEET --- */}
+            <Modal visible={alertConfig.visible} transparent animationType="fade">
+                <View style={styles.lightboxOverlay}>
+                    <View style={{ backgroundColor: '#FFF', padding: 24, borderRadius: 12, width: '80%', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: alertConfig.type === 'success' ? '#009246' : '#D9383A' }}>
+                            {alertConfig.title}
+                        </Text>
+                        <Text style={{ textAlign: 'center', marginBottom: 16, color: '#333' }}>{alertConfig.message}</Text>
+                        <TouchableOpacity 
+                            style={{ backgroundColor: alertConfig.type === 'success' ? '#009246' : '#D9383A', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 6 }}
+                            onPress={handleCloseAlertModal}
+                        >
+                            <Text style={{ color: '#FFF', fontWeight: '600' }}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <Modal visible={activeSelector !== null} transparent animationType="slide">
                 <Pressable style={styles.modalOverlay} onPress={() => setActiveSelector(null)}>
                     <View style={styles.bottomSheetContainer}>
@@ -286,7 +377,6 @@ const UploadAttachment = () => {
                 </Pressable>
             </Modal>
 
-            {/* --- LIGHTBOX PHOTO EXPANSION PREVIEW MODAL --- */}
             <Modal visible={lightboxUri !== null} transparent animationType="fade">
                 <View style={styles.lightboxOverlay}>
                     <TouchableOpacity style={styles.lightboxCloseButton} onPress={() => setLightboxUri(null)}>

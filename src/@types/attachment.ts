@@ -5,4 +5,5 @@ export interface UploadAttachments {
   transaction_id:           string;
   is_complete:              string; // is_complete = '0'
   supplier_id:              string;
+  shortname:                string;
 }
