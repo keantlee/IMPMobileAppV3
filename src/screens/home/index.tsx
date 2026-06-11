@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, Image, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 import { styles } from './styles';
 import { useAuthStore } from '../../store/useAuthStore';
 import { RenderModules } from '../../components/cards'; 
 import AppIcons from '../../assets/icons';
+import ScreenNames from '../../navigation/screenNames';
 
 interface HomeProps {
     navigation: any;
@@ -33,7 +36,13 @@ const Home = ({ navigation }: HomeProps) => {
 
     const handleViewRegisteredPrograms = () => console.warn('View Registered Programs');
     const handleViewAccreditation      = () => console.warn('View Accreditation');
-    const handleViewTransactionHistory = () => console.warn('View All Transaction History');
+    
+    const handleViewTransactionHistory = () => {
+        console.warn('Proceed to Transaction History Screen');
+
+        navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY)
+    };
+    
     const handleScanQR                 = () => console.log('Opening Scanner view...');
 
     return (
@@ -58,10 +67,10 @@ const Home = ({ navigation }: HomeProps) => {
                 shadowRadius: 8
             }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Welcome Back
                     </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '800', color: '#ffffff', marginVertical: 2 }}>
+                    <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginVertical: 2 }}>
                         {fullName}
                     </Text>
                     <Text numberOfLines={1} style={{ fontSize: 12, color: '#ffffff', fontWeight: '600' }}>
@@ -70,7 +79,7 @@ const Home = ({ navigation }: HomeProps) => {
                 </View>
 
                 <TouchableOpacity 
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#E0F2F1', justifyContent: 'center', alignItems: 'center' }}
+                    style={{ width: 35, height: 35, borderRadius: 22, backgroundColor: '#E0F2F1', justifyContent: 'center', alignItems: 'center' }}
                     onPress={() => console.warn('Go to profile screen')}
                 >
                     <Image source={AppIcons.userIcon || { uri: 'https://placehold.co/100' }} style={{ width: 30, height: 30 }} />
