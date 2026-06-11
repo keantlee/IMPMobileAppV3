@@ -72,7 +72,7 @@ interface SaveTransactionPayload {
 export interface SaveResponsePayload {
   status:         boolean;
   message:        string;
-  transaction_id: string;
+  data:           [];
 }
 
 // save_transaction

@@ -13,6 +13,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ScreenNames from '../../../navigation/screenNames';
 import { styles } from './styles';
 import { renderAlertPng } from '../../../assets/icons';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 interface UploadRouteParams {
     serverMessage?:     string;
@@ -20,25 +21,27 @@ interface UploadRouteParams {
     referenceNo?:       string;
     voucherId?:         string;
     rsbsaNo?:           string;
-    supplierId?:        string;
     shortname?:         string
 }
 
 const UploadConfirmationScreen = () => {
-    const navigation = useNavigation<any>();
-    const route      = useRoute<any>();
-    
+    const navigation     = useNavigation<any>();
+    const route          = useRoute<any>();
+    const userProfile    = useAuthStore.getState().user;
+    const supplierId     = userProfile?.userId;
+
+    console.log("[UPLOAD CONFIRMATION SCREEN] route: ", route);
+
     const { 
         serverMessage, 
         transactionId, 
         referenceNo, 
         voucherId, 
         rsbsaNo, 
-        supplierId,
         shortname 
     } = (route.params || {}) as UploadRouteParams;
 
-    console.log("[UPLOAD CONFIRMATION SCREEN] route parameters:", { transactionId, referenceNo, rsbsaNo, supplierId, shortname });
+    console.log("[UPLOAD CONFIRMATION SCREEN] UploadRouteParams:", { transactionId, referenceNo, rsbsaNo, supplierId, shortname });
 
     // Anti-Back-Loop Safety Net: Block hardware back button completely on success screen
     useEffect(() => {
