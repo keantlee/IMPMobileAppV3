@@ -15,6 +15,8 @@ const ScreenNames = {
   },
   HOME_STACK: {
     HOME:                       'HomeScreen',
+    TRANSACTION_HISTORY:        'TransactionHistory',
+    TRANSACTION_DETAIL:         'TransactionDetail',
     VIEW_TRANSACTION:           'ViewTransaction',
     SEARCH_VOUCHER:             'SearchVoucher',
     EDIT_COMMODITY_DETAILS:     'EditCommodityDetails',
