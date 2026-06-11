@@ -34,9 +34,9 @@ export const TransactionStackComponent: React.FC = () => {
                  // Native stack equivalent for clean fade transitions across operating systems
                  animation: 'fade_from_bottom' 
             }}
-            // initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
+            initialRouteName={ScreenNames.TRANSACTION_STACK.SCANNING}
             // initialRouteName={ScreenNames.TRANSACTION_STACK.FARMER_PROFILE}
-            initialRouteName={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
+            // initialRouteName={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
         >
             {/* Scan QR Screen */}
             <TransactionStack.Screen
@@ -89,9 +89,9 @@ export const TransactionStackComponent: React.FC = () => {
             <TransactionStack.Screen
                 component={UploadAttachment}
                 name={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
-                initialParams={{
-                    uploadAttachments: MOCK_UPLOAD_ATTACHMENTS,
-                }}
+                // initialParams={{
+                //     uploadAttachments: MOCK_UPLOAD_ATTACHMENTS,
+                // }}
             />
             
         </TransactionStack.Navigator>
