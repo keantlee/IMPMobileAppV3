@@ -44,6 +44,10 @@ const ReviewCart = () => {
 
     const transactionMutation = saveTransactionMutation(navigation);
 
+    const transactionId = transactionMutation.data?.data;
+
+    console.log("[REVIEW CART SCREEN] check transaction mutation data: ", transactionMutation.data?.data);
+
     // 1. Core State Trackers
     const [cart, setCart]           = useState<any[]>(initialCart);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -339,13 +343,11 @@ const ReviewCart = () => {
                                 if (alertConfig.type === 'success') {
                                     // Let mutationFn handle forwarding logic safely, close fallback handles cleanly here
                                     navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
-                                        serverMessage:      transactionMutation.data?.message,
-                                        transactionId:      transactionMutation.data?.transaction_id,
+                                        transactionId:      transactionId,
                                         referenceNo:        voucherInfo?.reference_no,
                                         voucherId:          voucherInfo?.voucher_id,
                                         rsbsaNo:            voucherInfo?.rsbsa_no,
-                                        supplierId:         transactionMutation?.supplier_id,
-                                        programShortname:   transactionMutation?.program_shortname
+                                        shortname:          voucherInfo?.shortname
                                     });
                                 }
                             }}

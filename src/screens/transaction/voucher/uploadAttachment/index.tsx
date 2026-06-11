@@ -11,7 +11,7 @@ import {
     Pressable,
     ScrollView,
     Alert,
-    ActivityIndicator // Added for explicit loading indicators
+    ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -28,7 +28,13 @@ import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase6
 import { saveAttachmentMutation } from '../../../../api/transaction';
 
 interface TransactionRouteParams {
-    uploadAttachments: UploadAttachments;  
+    // uploadAttachments: UploadAttachments;
+  voucherId:        string;
+  rsbsaNo:          string;
+  referenceNo:      string;
+  transactionId:    string;
+  supplierId:       string;
+  shortname:        string;
 }
 
 interface FormFieldType {
@@ -47,8 +53,13 @@ const UploadAttachment = () => {
     const navigation = useNavigation<any>();
     const route      = useRoute<any>();
 
+    console.log("[UPLOAD ATTACHMENT SCREEN] Incoming route: ", route);
+
     const routeParams           = (route.params || {}) as TransactionRouteParams;
-    const { uploadAttachments } = routeParams;
+    const { voucherId, transactionId, rsbsaNo, referenceNo, supplierId, shortname } = routeParams;
+
+    console.log("[UPLOAD ATTACHMENT SCREEN] route params: ", routeParams);
+    // console.log("[UPLOAD ATTACHMENT SCREEN] uploadAttachments: ", uploadAttachments);
 
     const attachmentMutation = saveAttachmentMutation(navigation);
 
@@ -192,12 +203,12 @@ const UploadAttachment = () => {
                     ...otherDocsPayload,
                     name: 'Other documents'
                 },
-                rsbsa_no:       uploadAttachments.rsbsa_no,
-                reference_no:   uploadAttachments.reference_no,
-                supplier_id:    uploadAttachments.supplier_id,
-                transaction_id: uploadAttachments.transaction_id,
-                voucher_id:     uploadAttachments.voucher_id,
-                shortname:      uploadAttachments.shortname,
+                rsbsa_no:       rsbsaNo,
+                reference_no:   referenceNo,
+                supplier_id:    supplierId,
+                transaction_id: transactionId,
+                voucher_id:     voucherId,
+                shortname:      shortname,
             };
 
             attachmentMutation.mutate({ attachmentParams });

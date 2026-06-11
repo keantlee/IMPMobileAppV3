@@ -14,7 +14,6 @@ import BottomNavBar from './bottomNav/BottomNavBar';
 const Stack = createNativeStackNavigator();
 
 export const AppStack = () => {
-    // ⚡️ Grab active indicators directly from your store
     const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
     console.log(" [AppStack Evaluation Layout Frame] Is Logged In?:", isLoggedIn);
@@ -23,16 +22,12 @@ export const AppStack = () => {
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 
-                {/* 🛡️ GATE 1: USER IS ALREADY LOGGED IN */}
                 {isLoggedIn ? (
                     <Stack.Screen 
                         component={BottomNavBar} 
                         name={ScreenNames.APP_STACK.MAIN_TAB}
                     />
                 ) : (
-                    // GATE 2: USER IS UNAUTHENTICATED
-                    // Grouping these here ensures they unmount seamlessly together 
-                    // without leaving dangling navigation pointers behind!
                     <>
                         <Stack.Screen 
                             component={Authentication} 
