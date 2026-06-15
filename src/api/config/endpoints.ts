@@ -4,6 +4,7 @@ const EndPoints = {
   RESEND_OTP:                           'resend-otp',
   VIEW_TRANSACTED_VOUCHER_INFO:         'view-transaction-info',
   GET_TRANSACTED_VOUCHERS:              'get-transacted-vouchers',
+  GET_TRANSCTION_HISTORY:              'get-transaction-history',
   GET_LATEST_TRANSACTED_VOUCHERS:       'get-latest-transacted-vouchers',
   GET_TRANSACTED_ITEM_COMMODITIES:      'get-transacted-item-commodities',
   GET_TRANSACTED_UPLOADED_ATTACHMENTS:  'get-transacted-uploaded-attachments',
