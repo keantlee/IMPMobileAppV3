@@ -20,7 +20,7 @@ interface EnvironmentConfig {
  *  Terminal: adb reverse tcp:8000 tcp:8000
  */
 // const localIp = Platform.OS === 'android' ? '10.0.2.2:8000' : '0.0.0.0:8000';
-const localIp = '172.17.151.152:8080';
+const localIp = '172.17.151.116:8080';
 
 // Note: If you run your local PHP/Laravel server on a specific port (like :8000), append it here:
 // const localIp = Platform.OS === 'android' ? '10.0.2.2:8000' : '127.0.0.1:8000';

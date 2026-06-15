@@ -1,3 +1,5 @@
+import { StringValidation } from "zod/v3";
+
 export interface SubCategory {
   fertilizer_sub_category_id:   string;
   fertilizer_category_id:       string;
@@ -87,4 +89,29 @@ export interface CartScreenParams {
   status:       boolean;
   voucherInfo:  VoucherInfo; // uses the voucherInfo object
   timer?:       number;
+}
+
+export interface TransactionInfo {
+  transaction_id: string;
+  reference_no:   string;
+  rsbsa_no:       string;
+  supplier_id:    string;
+  voucher_id:     string;
+}
+
+export interface AttachmentInfo {
+  attachment_id:  string;
+  transaction_id: string;
+  document:       string;
+  file_name:      string;
+  created_at:     string;
+  updated_at:     string;
+  status:         string;
+}
+
+export interface FilePathInfo {
+  rsbsa_no:     string;
+  refernce_no:  string;
+  file_type:    string;
+  file_path:    string;
 }

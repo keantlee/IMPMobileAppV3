@@ -6,7 +6,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { POST, GET } from "./config/axios";
 import ScreenNames from '../navigation/screenNames';
 import EndPoints from './config/endpoints';
-import { VoucherInfo } from '../@types/voucher';
+import { TransactionInfo, VoucherInfo } from '../@types/voucher';
 
 interface ScanVoucherPayload {
   voucherCode: string;
@@ -41,14 +41,14 @@ export const scanVoucherMutation = () => {
         const response = await POST<ScanVoucherResponse>(EndPoints.SCAN_QR_CODE, cleanPayload);
 
         if (response.status !== true) {
-            throw new Error(response.message);
+            throw new Error(response.message || 'The database rejected this transaction update snapshot.');
         }
 
         return response;
     },
     // 'variables' contains anything you passed into the mutate() call
     onSuccess: (serverData, variables) => {
-        console.log('[Scan Voucher Mutation] Voucher Verified: ', serverData.voucherInfo?.first_name, serverData.voucherInfo?.last_name);
+        console.log('[Scan Voucher Mutation] Server data received: ', serverData.voucherInfo?.first_name, serverData.voucherInfo?.last_name);
         
         // Safely navigate using the screen's contextual navigation driver
         variables.navigation.navigate(ScreenNames.TRANSACTION_STACK.FARMER_PROFILE, serverData);
@@ -123,6 +123,7 @@ export const saveTransactionMutation = (navigation: any) => {
         console.log('[SAVE TRANSACTION MUTATION] Payload:', cleanPayload);
 
         const response = await POST<SaveResponsePayload>(EndPoints.SAVE_TRANSACTION, cleanPayload);
+        
         if (response.status !== true) {
             throw new Error(response.message || 'The database rejected this transaction update snapshot.');
         }
@@ -130,7 +131,7 @@ export const saveTransactionMutation = (navigation: any) => {
         return response;
     },
     onSuccess: (serverData) => {
-        console.log('[SAVE TRANSACTION MUTATION] Server pipeline successfully completed code execution:', serverData);
+        console.log('[SAVE TRANSACTION MUTATION]  Server data received:', serverData);
         
         // Note: Navigation is handled by the ReviewCart screen's success modal 
         // to allow the user to see the confirmation message before moving forward.
@@ -207,3 +208,53 @@ export const saveAttachmentMutation = (navigation: any) => {
     }
   });
 };
+
+// view transaction history
+export interface transactionHistoryPayload {
+  supplier_id: string;
+}
+
+export interface transactionHistoryResponsePayload {
+  status: boolean;
+  data: Array<{
+    reference_no:       string;
+    transaction_id:     string;
+    supplier_id:        string;
+    total_amount:       string | number;
+    transact_date:      string;
+    transaction_status: 'Complete' | 'Pending';
+  }>;
+  message?: string;
+}
+
+export const getTransactionHistoryMutation = () => {
+  return useMutation<transactionHistoryResponsePayload, Error, transactionHistoryPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if(!netState.isConnected || !netState.isInternetReachable) {
+          throw new Error('[GET TRANSACTION HISTORY MUTATION] No internet connection found.');
+      }
+
+      console.log("[GET TRANSACTION HISTORY MUTATION] payload: ", payload);
+
+      let cleanPayload = { supplier_id: payload.supplier_id };
+
+      const response = await POST<transactionHistoryResponsePayload>(EndPoints.GET_TRANSCTION_HISTORY, cleanPayload);
+
+      if (response.status !== true) {
+          throw new Error(response.message || 'The database rejected this transaction update snapshot.');
+      }
+
+      return response;
+    }, 
+    onSuccess: (serverData) => {
+      console.log("[GET TRANSACTION HISTORY MUTATION] Server data received: ", serverData);  
+    },
+    onError: (error: Error) => {
+      console.warn("[GET TRANSACTION HISTORY MUTATION] TanStack Exception Tracker: ", error.message);
+    }
+  });
+}
+
+// view transaction details
