@@ -27,8 +27,8 @@ const localIp = '172.17.151.116:8080';
 
 const ENDPOINTS: Record<AppMode, EnvironmentConfig> = {
     [AppMode.LOCAL]: {
-        apiHost:        `http://${localIp}/api-v2/`,
-        apiAccessPoint: `http://${localIp}/api-v2/`,
+        apiHost:        `http://${localIp}/v3/`,
+        apiAccessPoint: `http://${localIp}/v3/`,
     },
     [AppMode.DEVELOPMENT]: {
         apiHost:        'https://devsysadd.da.gov.ph/imp/api-v2/',
