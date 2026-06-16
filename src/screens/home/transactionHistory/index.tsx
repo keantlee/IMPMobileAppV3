@@ -29,7 +29,7 @@ const TransactionHistory = () => {
     const navigation    = useNavigation<any>();
     const route         = useRoute<any>();
     
-    const userInfo      = useAuthStore((state) => state.user);
+    const userInfo      = useAuthStore.getState().user;
     const supplierId    = userInfo?.userId; 
 
     // Cache & UI rendering states
@@ -204,6 +204,9 @@ const TransactionHistory = () => {
             </View>
 
             {/* Filter Tabs Layout */}
+            {/* Can we make this horizontal scroll?
+                We need also to add Cancelled and Returned condition status
+            */}
             <View style={{ 
                 flexDirection: 'row', 
                 paddingHorizontal: 20, 
