@@ -217,12 +217,14 @@ export interface transactionHistoryPayload {
 export interface transactionHistoryResponsePayload {
   status: boolean;
   data: Array<{
+    voucher_id:         string;
+    rsbsa_no:           string;
     reference_no:       string;
     transaction_id:     string;
     supplier_id:        string;
     total_amount:       string | number;
     transact_date:      string;
-    transaction_status: 'Complete' | 'Pending' | 'Cancelled' | 'Returned';
+    transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
   }>;
   message?: string;
 }
@@ -261,6 +263,9 @@ export const getTransactionHistoryMutation = () => {
 export interface transactionDetailsPayload {
   transaction_id: string;
   reference_no:   string;
+  supplier_id:    string;
+  status:         'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
+  navigation:     any; // Receives the UI workflow navigation hook reference
 }
 
 export interface transactionDetailsResponsePayload {
@@ -274,7 +279,7 @@ export interface transactionDetailsResponsePayload {
     unit_type:          string;
     total_amount:       string | number;
     remarks:            string;
-    transaction_status: 'Complete' | 'Pending' | 'Cancelled';
+    transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
   }>;
   attachments: Array<{
     beneficiary:    string;
@@ -295,15 +300,16 @@ export const getTransactionDetailsMutation = () => {
           throw new Error('[GET TRANSACTION DETAILS MUTATION] No internet connection found.');
       }
 
-      // Added missing closing bracket to your console log string
-      console.log("[GET TRANSACTION DETAILS MUTATION] payload: ", payload);
+      console.log("[GET TRANSACTION DETAILS MUTATION] payload payload: ", payload);
 
+      // Create a clean payload object explicitly mapping expected keys for your Laravel backend
       let cleanPayload = { 
         transaction_id: payload.transaction_id, 
-        reference_no:   payload.reference_no 
+        reference_no:   payload.reference_no,
+        supplier_id:    payload.supplier_id,
+        status:         payload.status,
       };
 
-      //  FIXED: Cast to transactionDetailsResponsePayload
       const response = await POST<transactionDetailsResponsePayload>(
         EndPoints.GET_TRANSACTION_DETAILS, 
         cleanPayload
@@ -315,8 +321,20 @@ export const getTransactionDetailsMutation = () => {
 
       return response;
     },
-    onSuccess: (serverData) => {
+    onSuccess: (serverData, variables) => {
       console.log("[GET TRANSACTION DETAILS MUTATION] Server data received: ", serverData); 
+      console.log("[GET TRANSACTION DETAILS MUTATION] Routing execution to destination detail viewport");
+      
+      // Navigate to the transaction details screen using the passed navigation reference
+      // Passing both identification keys and retrieved backend information lists
+      variables.navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
+          transactionId:   variables.transaction_id,
+          referenceNo:     variables.reference_no,
+          supplierId:      variables.supplier_id,
+          status:          variables.status,
+          transactionInfo: serverData.info,
+          attachments:     serverData.attachments
+      });
     },
     onError: (error: Error) => {
       console.warn("[GET TRANSACTION DETAILS MUTATION] TanStack Exception Tracker: ", error.message);

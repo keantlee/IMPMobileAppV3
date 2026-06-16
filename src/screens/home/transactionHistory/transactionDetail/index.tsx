@@ -33,7 +33,8 @@ const TransactionDetail = () => {
     const userInfo      = useAuthStore.getState().user;
     
     const { transactionId, referenceNo } = (route.params || {}) as TransactionDetailRouteParams;
-
+    // const { transactionId, referenceNo, status, transactionInfo, attachments } = route.params || {};
+    
     // State management
     const [isHelpModalVisible, setIsHelpModalVisible] = useState<boolean>(false);
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState<boolean>(false);
