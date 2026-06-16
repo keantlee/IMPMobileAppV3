@@ -222,7 +222,7 @@ export interface transactionHistoryResponsePayload {
     supplier_id:        string;
     total_amount:       string | number;
     transact_date:      string;
-    transaction_status: 'Complete' | 'Pending';
+    transaction_status: 'Complete' | 'Pending' | 'Cancelled' | 'Returned';
   }>;
   message?: string;
 }
@@ -243,7 +243,7 @@ export const getTransactionHistoryMutation = () => {
       const response = await POST<transactionHistoryResponsePayload>(EndPoints.GET_TRANSCTION_HISTORY, cleanPayload);
 
       if (response.status !== true) {
-          throw new Error(response.message || 'The database rejected this transaction update snapshot.');
+          throw new Error(response.message || 'The database rejected this transaction request.');
       }
 
       return response;
@@ -258,3 +258,69 @@ export const getTransactionHistoryMutation = () => {
 }
 
 // view transaction details
+export interface transactionDetailsPayload {
+  transaction_id: string;
+  reference_no:   string;
+}
+
+export interface transactionDetailsResponsePayload {
+  status: boolean;
+  info: Array<{
+    reference_no:       string;
+    transaction_id:     string;
+    category:           string;
+    sub_category:       string;
+    quantity:           number;
+    unit_type:          string;
+    total_amount:       string | number;
+    remarks:            string;
+    transaction_status: 'Complete' | 'Pending' | 'Cancelled';
+  }>;
+  attachments: Array<{
+    beneficiary:    string;
+    front_id:       string;
+    back_id:        string;
+    receipt:        string;
+    other_docs:     string[];
+  }>;
+  message?: string;
+}
+
+export const getTransactionDetailsMutation = () => {
+  return useMutation<transactionDetailsResponsePayload, Error, transactionDetailsPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if(!netState.isConnected || !netState.isInternetReachable) {
+          throw new Error('[GET TRANSACTION DETAILS MUTATION] No internet connection found.');
+      }
+
+      // Added missing closing bracket to your console log string
+      console.log("[GET TRANSACTION DETAILS MUTATION] payload: ", payload);
+
+      let cleanPayload = { 
+        transaction_id: payload.transaction_id, 
+        reference_no:   payload.reference_no 
+      };
+
+      //  FIXED: Cast to transactionDetailsResponsePayload
+      const response = await POST<transactionDetailsResponsePayload>(
+        EndPoints.GET_TRANSACTION_DETAILS, 
+        cleanPayload
+      );
+
+      if (response.status !== true) {
+          throw new Error(response.message || 'The database rejected this transaction request.');
+      }
+
+      return response;
+    },
+    onSuccess: (serverData) => {
+      console.log("[GET TRANSACTION DETAILS MUTATION] Server data received: ", serverData); 
+    },
+    onError: (error: Error) => {
+      console.warn("[GET TRANSACTION DETAILS MUTATION] TanStack Exception Tracker: ", error.message);
+    }
+  });
+};
+
