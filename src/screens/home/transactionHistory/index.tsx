@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, BackHandler, ActivityIndicator, SectionList, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, BackHandler, ActivityIndicator, SectionList, TextInput, ScrollView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -7,15 +7,17 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { styles } from './styles';
 import ScreenNames from '../../../navigation/screenNames';
-import { getTransactionHistoryMutation } from '../../../api/transaction';
+import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../../api/transaction';
 
 interface TransactionItem {
+    voucher_id:         string;
+    rsbsa_no:           string;
     reference_no:       string;
     transaction_id:     string;
     supplier_id:        string;
     total_amount:       string | number;
     transact_date:      string;
-    transaction_status: 'Complete' | 'Pending';
+    transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
 }
 
 interface SectionData {
@@ -23,7 +25,7 @@ interface SectionData {
     data:   TransactionItem[];
 }
 
-type FilterStatus = 'All' | 'Complete' | 'Pending';
+type FilterStatus = 'All' | 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
 
 const TransactionHistory = () => {
     const navigation    = useNavigation<any>();
@@ -41,7 +43,8 @@ const TransactionHistory = () => {
     const [activeFilter, setActiveFilter]               = useState<FilterStatus>('All');
 
     // Query mutation
-    const transactionMutation = getTransactionHistoryMutation();
+    const transactionMutation   = getTransactionHistoryMutation();
+    const detailsMutation       = getTransactionDetailsMutation();
 
     useEffect(() => {
         const handleBackPress = () => {
@@ -72,7 +75,7 @@ const TransactionHistory = () => {
                 onSuccess: (response) => {
                     if (response && response.data) {
                         // Store the original backup array
-                        setRawTransactions(response.data);
+                        setRawTransactions(response.data as TransactionItem[]);
                     }
                 },
             }
@@ -124,11 +127,32 @@ const TransactionHistory = () => {
     };
 
     const handleTransactionDetail = (item: TransactionItem) => {
-        navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
-            transactionId:  item.transaction_id,
-            referenceNo:    item.reference_no,
-            supplierId:     item.supplier_id,
-        });
+        if (item.transaction_status === 'Re-Transact') {
+            // Navigate to Review Voucher Info Screen then proceed to a new transaction
+            navigation.navigate(ScreenNames.TRANSACTION_STACK.REVIEW_VOUCHER_INFO, {
+                referenceNo:    item.reference_no,
+                supplierId:     item.supplier_id,
+                isReTransact:   true,
+            });
+        } else if (item.transaction_status === 'Re-Upload') {
+            // Navigate directly to the Upload Attachments Screen stack
+            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
+                transactionId:  item.transaction_id,
+                referenceNo:    item.reference_no,
+                supplierId:     item.supplier_id,
+            });
+        } 
+        else {
+            console.log("[TRANSACTION HISTORY SCREEN] Payload: ", item.reference_no);
+
+            detailsMutation.mutate({
+                transaction_id: item.transaction_id,
+                reference_no:   item.reference_no,
+                supplier_id:    item.supplier_id,
+                status:         item.transaction_status,
+                navigation:     navigation // Pass the navigation instance here!
+            });
+        }
     };
 
     const formatCurrency = (amount: string | number) => {
@@ -145,6 +169,22 @@ const TransactionHistory = () => {
             day: 'numeric',
             year: 'numeric',
         });
+    };
+
+    // Helper function to return visual colors depending on item transaction status
+    const getStatusStyles = (status: TransactionItem['transaction_status']) => {
+        switch (status) {
+            case 'Completed':
+                return { bg: '#E8F5E9', text: '#2E7D32' };
+            case 'Pending':
+                return { bg: '#FFF3E0', text: '#E65100' };
+            case 'Re-Transact':
+                return { bg: '#FFEBEE', text: '#C62828' }; // Soft Crimson layout
+            case 'Re-Upload':
+                return { bg: '#E3F2FD', text: '#1565C0' }; // Soft Indigo layout
+            default:
+                return { bg: '#EEEEEE', text: '#424242' };
+        }
     };
 
     return (
@@ -165,7 +205,7 @@ const TransactionHistory = () => {
             </View>
 
             {/* Search Input Container */}
-            <View style={{ paddingHorizontal: 20, paddingTop: 16, pb: 6 }}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 6 }}>
                 <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -203,49 +243,47 @@ const TransactionHistory = () => {
                 </View>
             </View>
 
-            {/* Filter Tabs Layout */}
-            {/* Can we make this horizontal scroll?
-                We need also to add Cancelled and Returned condition status
-            */}
-            <View style={{ 
-                flexDirection: 'row', 
-                paddingHorizontal: 20, 
-                marginVertical: 12, 
-                justifyContent: 'space-between' 
-            }}>
-                {(['All', 'Complete', 'Pending'] as FilterStatus[]).map((filter) => {
-                    const isActive = activeFilter === filter;
-                    return (
-                        <TouchableOpacity
-                            key={filter}
-                            activeOpacity={0.8}
-                            onPress={() => setActiveFilter(filter)}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 8,
-                                marginHorizontal: filter === 'Complete' ? 6 : 0,
-                                backgroundColor: isActive ? '#009246' : '#FFFFFF',
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: isActive ? '#009246' : '#EAEAEA',
-                                alignItems: 'center',
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: isActive ? 0.1 : 0,
-                                shadowRadius: 1,
-                                elevation: isActive ? 2 : 0
-                            }}
-                        >
-                            <Text style={{ 
-                                fontSize: 13, 
-                                fontWeight: '600', 
-                                color: isActive ? '#FFFFFF' : '#7F8C8D' 
-                            }}>
-                                {filter}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
+            {/* Filter Tabs Layout - Transformed into Horizontal Scroll Container */}
+            <View style={{ marginVertical: 12, height: 38 }}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, alignItems: 'center' }}
+                >
+                    {(['All', 'Completed', 'Pending', 'Re-Transact', 'Re-Upload'] as FilterStatus[]).map((filter) => {
+                        const isActive = activeFilter === filter;
+                        return (
+                            <TouchableOpacity
+                                key={filter}
+                                activeOpacity={0.8}
+                                onPress={() => setActiveFilter(filter)}
+                                style={{
+                                    paddingVertical: 8,
+                                    paddingHorizontal: 16,
+                                    marginRight: 8,
+                                    backgroundColor: isActive ? '#009246' : '#FFFFFF',
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: isActive ? '#009246' : '#EAEAEA',
+                                    alignItems: 'center',
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 1 },
+                                    shadowOpacity: isActive ? 0.1 : 0,
+                                    shadowRadius: 1,
+                                    elevation: isActive ? 2 : 0
+                                }}
+                            >
+                                <Text style={{ 
+                                    fontSize: 13, 
+                                    fontWeight: '600', 
+                                    color: isActive ? '#FFFFFF' : '#7F8C8D' 
+                                }}>
+                                    {filter}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
             </View>
 
             {/* List UI Logic */}
@@ -267,7 +305,7 @@ const TransactionHistory = () => {
                         </Text>
                     )}
                     renderItem={({ item }: { item: TransactionItem }) => {
-                        const isComplete = item.transaction_status === 'Complete';
+                        const statusUI = getStatusStyles(item.transaction_status);
                         
                         return (
                             <TouchableOpacity 
@@ -285,7 +323,7 @@ const TransactionHistory = () => {
                                     borderColor: '#EAEAEA'
                                 }}
                             >
-                                <View style={{ flex: 0.65 }}>
+                                <View style={{ flex: 0.60 }}>
                                     <Text style={{ fontSize: 14, fontWeight: '600', color: '#2C3E50', marginBottom: 4 }} numberOfLines={1}>
                                         {item.reference_no}
                                     </Text>
@@ -293,17 +331,17 @@ const TransactionHistory = () => {
                                         {formatDateString(item.transact_date)}
                                     </Text>
                                 </View>
-                                <View style={{ flex: 0.35, alignItems: 'flex-end' }}>
-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: isComplete ? '#2E7D32' : '#2C3E50', marginBottom: 4 }} numberOfLines={1}>
+                                <View style={{ flex: 0.40, alignItems: 'flex-end' }}>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#2C3E50', marginBottom: 4 }} numberOfLines={1}>
                                         {formatCurrency(item.total_amount)}
                                     </Text>
                                     <View style={{
-                                        backgroundColor: isComplete ? '#E8F5E9' : '#FFF3E0',
+                                        backgroundColor: statusUI.bg,
                                         paddingHorizontal: 8,
-                                        paddingVertical: 2,
+                                        paddingVertical: 3,
                                         borderRadius: 4
                                     }}>
-                                        <Text style={{ fontSize: 10, color: isComplete ? '#2E7D32' : '#E65100', fontWeight: '600' }}>
+                                        <Text style={{ fontSize: 10, color: statusUI.text, fontWeight: '600' }}>
                                             {item.transaction_status}
                                         </Text>
                                     </View>

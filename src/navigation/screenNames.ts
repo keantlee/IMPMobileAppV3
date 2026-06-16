@@ -29,6 +29,7 @@ const ScreenNames = {
   },
   TRANSACTION_STACK: {
     SCANNING:                   'ScanningScreen',
+    REVIEW_VOUCHER_INFO:        'ReviewVoucherInfo',
     FARMER_PROFILE:             'FarmerProfile',
     CART:                       'Cart',
     ADD_ITEM:                   'AddItem',
