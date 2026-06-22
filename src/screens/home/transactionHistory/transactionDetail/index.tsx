@@ -1,62 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, BackHandler, Modal, TextInput, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, BackHandler, Modal, Dimensions, Image, StyleSheet } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { styles } from './styles';
-import { getTransactionDetailsMutation } from '../../../../api/transaction';
 
 interface TransactionDetailRouteParams {
-    transactionId?: string;
-    referenceNo?:   string;
-    category?:      string;
-    subCategory?:   string;
-    quantity?:      string;
-    unitType?:      string;
-    remarks?:       string;
-    attachments?:   any[];
-    status?:        string;
-    date?:          string;
-    time?:          string;
-    amount?:        number;
-} 
+    transactionId?:   string;
+    referenceNo?:     string;
+    supplierId?:      string;
+    status?:          'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
+    transactionInfo?: any[]; 
+    attachments?:     any[]; 
+}
 
-type HelpOption = 'retransact' | 'update_attachments' | null;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const TransactionDetail = () => {
+const TransactionDetail2 = () => {
     const navigation    = useNavigation<any>();
     const route         = useRoute<any>();
     const userInfo      = useAuthStore.getState().user;
     
-    const { transactionId, referenceNo } = (route.params || {}) as TransactionDetailRouteParams;
-    // const { transactionId, referenceNo, status, transactionInfo, attachments } = route.params || {};
-    
+    const { 
+        transactionId, 
+        referenceNo, 
+        supplierId, 
+        status, 
+        transactionInfo = [], 
+        attachments = [] 
+    } = (route.params || {}) as TransactionDetailRouteParams;
+
     // State management
     const [isHelpModalVisible, setIsHelpModalVisible] = useState<boolean>(false);
-    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState<boolean>(false);
-    const [selectedOption, setSelectedOption] = useState<HelpOption>(null);
-    const [remarksText, setRemarksText] = useState<string>('');
+    const [viewerModalVisible, setViewerModalVisible] = useState<boolean>(false);
+    const [viewerTitle, setViewerTitle] = useState<string>('');
+    const [viewerImages, setViewerImages] = useState<string[]>([]);
 
-    // Query mutation to fetch dynamic trasaction details from the laravel backend
-    const transactionMutation = getTransactionDetailsMutation();
-    const mockDetails = {
-        amount:         3000.00,
-        status:         'Complete', // Expected values: 'Complete' | 'Pending'
-        date:           'Jun 16, 2026',
-        time:           '10:14 AM',
-        category:       'Inorganic Fertilizer',
-        subCategory:    'Four-Wheel Tractor',
-        quantity:       '25.00',
-        unitType:       'KG',
-        remarks:        'Distributed successfully to agrarian reform beneficiaries.',
-    };
+    const isComplete = status?.toLowerCase() === 'completed' || status?.toLowerCase() === 'complete';
+    const isPending  = status?.toLowerCase() === 'pending';
 
     useEffect(() => {
         const handleBackPress = () => {
+            if (viewerModalVisible) {
+                setViewerModalVisible(false);
+                return true;
+            }
             if (isHelpModalVisible) {
                 setIsHelpModalVisible(false);
                 return true;
@@ -67,36 +57,92 @@ const TransactionDetail = () => {
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
         return () => backHandler.remove();
-    }, [navigation, isHelpModalVisible]);
+    }, [navigation, isHelpModalVisible, viewerModalVisible]);
 
-    const handleSendRequest = () => {
-        if (!selectedOption) return;
-        
-        setIsHelpModalVisible(false);
-        setTimeout(() => {
-            setIsSuccessModalVisible(true);
-        }, 400);
-    };
-
-    const handleCloseHelp = () => {
-        setSelectedOption(null);
-        setRemarksText('');
-        setIsHelpModalVisible(false);
-    };
-
-    // Derived Status Helpers
-    const isComplete  = mockDetails.status === 'Complete';
-    const isPending   = mockDetails.status === 'Pending';
-    const isCancelled = mockDetails.status === 'Cancelled';
-
-    // Helper method to resolve Card 1 Theme Context variables dynamically
     const getStatusTheme = () => {
-        if (isComplete) return { bg: '#E8F5E9', color: '#29d92f', icon: 'check-circle' };
-        if (isCancelled) return { bg: '#FFEBEE', color: '#C62828', icon: 'cancel' };
-        return { bg: '#FFF3E0', color: '#E65100', icon: 'pending' }; // Pending Default fallbacks
+        if (isComplete) return { bg: '#E8F5E9', color: '#009246', icon: 'check-circle' };
+        if (isPending)  return { bg: '#FFF3E0', color: '#E65100', icon: 'pending' };
+        return { bg: '#ECEFF1', color: '#2C3E50', icon: 'info' }; 
     };
 
     const theme = getStatusTheme();
+
+    const formatDateTime = (rawDateTimeString?: string) => {
+        if (!rawDateTimeString) return { date: 'N/A', time: 'N/A' };
+        try {
+            const normalizedString = rawDateTimeString.replace(/-/g, '/');
+            const parsedDate = new Date(normalizedString);
+            if (isNaN(parsedDate.getTime())) {
+                return { date: rawDateTimeString, time: 'N/A' };
+            }
+            return {
+                date: parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                time: parsedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+            };
+        } catch {
+            return { date: rawDateTimeString, time: 'N/A' };
+        }
+    };
+
+    const getImageUri = (base64Str: string | null) => {
+        if (!base64Str) return null;
+        let mimeType = 'image/jpeg';
+        if (base64Str.startsWith('UklG') || base64Str.substring(0, 30).includes('WEBP')) {
+            mimeType = 'image/webp';
+        } else if (base64Str.startsWith('iVBORw0KG')) {
+            mimeType = 'image/png';
+        }
+        return `data:${mimeType};base64,${base64Str}`;
+    };
+
+    const getIconNameForCategory = (labelKey: string) => {
+        if (labelKey.includes('Beneficiary')) return 'camera-alt';
+        if (labelKey.includes('ID')) return 'assignment-ind';
+        if (labelKey.includes('Receipt')) return 'receipt';
+        return 'description';
+    };
+
+    /**
+     * FIX: Use .filter() instead of .find() to catch multiple files fetched from S3
+     */
+    const structuredCategories = [
+        {
+            label: 'Beneficiary with Commodity',
+            allData: attachments.filter((a: any) => a.name === 'Beneficiary with Commodity')
+        },
+        {
+            label: 'Front Valid ID',
+            allData: attachments.filter((a: any) => a.name === 'Front Valid ID')
+        },
+        {
+            label: 'Back Valid ID',
+            allData: attachments.filter((a: any) => a.name === 'Back Valid ID')
+        },
+        {
+            label: 'Receipt',
+            allData: attachments.filter((a: any) => a.name === 'Receipt')
+        },
+        {
+            label: 'Other Docs',
+            allData: attachments.filter((a: any) => a.name && a.name.toLowerCase().includes('other'))
+        }
+    ];
+
+    // Method triggered when user hits click target
+    const handleOpenViewer = (label: string, dataItems: any[]) => {
+        const extractedUris = dataItems
+            .map(item => getImageUri(item?.image))
+            .filter(uri => uri !== null) as string[];
+
+        if (extractedUris.length === 0) return;
+
+        setViewerTitle(label);
+        setViewerImages(extractedUris);
+        setViewerModalVisible(true);
+    };
+
+    const cumulativeTotalAmount = transactionInfo.reduce((sum, item) => sum + parseFloat(item?.amount || '0'), 0);
+    const { date: displayDate } = formatDateTime(transactionInfo[0]?.transac_date);
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
@@ -105,11 +151,7 @@ const TransactionDetail = () => {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity 
-                        style={styles.backButton} 
-                        onPress={() => navigation.goBack()}
-                        activeOpacity={0.7}
-                    >
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Transaction Details</Text>
@@ -126,67 +168,114 @@ const TransactionDetail = () => {
                         <View style={styles.amountContainer}>
                             <Text style={styles.pesoSign}>₱</Text>
                             <Text style={styles.amountValue}>
-                                {new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(mockDetails.amount)}
+                                {new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(cumulativeTotalAmount)}
                             </Text>
                         </View>
                         
                         <View style={[styles.statusBadge, { backgroundColor: theme.bg }]}>
-                            <Text style={[styles.statusText, { color: theme.color }]}>
-                                {mockDetails.status}
-                            </Text>
+                            <Text style={[styles.statusText, { color: theme.color }]}>{status}</Text>
                         </View>
-                        <Text style={styles.dateTimeText}>{mockDetails.date} • {mockDetails.time}</Text>
+                        <Text style={styles.dateTimeText}>{displayDate}</Text>
                     </View>
 
-                    {/* Card 2: Technical Breakdown Details */}
-                    <View style={styles.detailsCard}>
-                        <Text style={styles.cardSectionTitle}>Transaction Information</Text>
-                        
-                        {[
-                            { label: 'Reference No.', value: referenceNo, isBold: true },
-                            { label: 'Category', value: mockDetails.category },
-                            { label: 'Sub Category', value: mockDetails.subCategory },
-                            { label: 'Quantity', value: mockDetails.quantity },
-                            { label: 'Unit Type', value: mockDetails.unitType },
-                            { label: 'Transaction Amount', value: `₱${new Intl.NumberFormat('en-PH').format(mockDetails.amount)}` },
-                            { label: 'Remarks', value: mockDetails.remarks, isMultiline: true },
-                        ].map((row, idx) => (
-                            <View key={idx} style={[styles.detailRow, row.isMultiline && { flexDirection: 'column', alignItems: 'flex-start' }]}>
-                                <Text style={styles.rowLabel}>{row.label}</Text>
-                                <Text style={[styles.rowValue, row.isBold && { fontWeight: '700', color: '#2C3E50' }, row.isMultiline && { marginTop: 4, textAlign: 'left' }]}>
-                                    {row.value}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
+                    {/* Card 2: Transaction Items array loop */}
+                    {transactionInfo.map((item: any, idx: number) => (
+                        <View key={item?.voucher_details_id || idx} style={[styles.detailsCard, { marginTop: idx > 0 ? 12 : 16 }]}>
+                            <Text style={styles.cardSectionTitle}>Transaction Item #{idx + 1}</Text>
+                            
+                            {[
+                                { label: 'Reference No.', value: referenceNo, isBold: true },
+                                { label: 'Category', value: item?.category || 'N/A' },
+                                { label: 'Sub Category', value: item?.subCategory || 'N/A', hasLongText: true },
+                                { label: 'Quantity', value: item?.quantity || '0.00' },
+                                { label: 'Unit Type', value: item?.unitType || 'N/A' },
+                                { 
+                                    label: 'Transaction Amount', 
+                                    value: item?.amount 
+                                        ? `₱${new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(parseFloat(item.amount))}`
+                                        : '₱0.00' 
+                                },
+                                { label: 'Remarks', value: item?.remarks || 'No descriptive comments left.', isMultiline: true },
+                            ].map((row, rowIdx) => (
+                                <View 
+                                    key={rowIdx} 
+                                    style={[
+                                        styles.detailRow, 
+                                        row.isMultiline && { flexDirection: 'column', alignItems: 'flex-start' }
+                                    ]}
+                                >
+                                    <Text style={styles.rowLabel}>{row.label}</Text>
+                                    <Text 
+                                        style={[
+                                            styles.rowValue, 
+                                            row.isBold && { fontWeight: '700', color: '#2C3E50' }, 
+                                            row.isMultiline && { marginTop: 4, textAlign: 'left' },
+                                            row.hasLongText && { flexShrink: 1, textAlign: 'right', paddingLeft: 16 }
+                                        ]}
+                                        numberOfLines={row.hasLongText ? 2 : undefined}
+                                    >
+                                        {row.value}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    ))}
 
-                    {/* Card 3: Attachments Visual Grid (Hidden entirely if status is Pending) */}
+                    {/* Card 3: Standardized 5-Category Attachments List */}
                     {!isPending && (
                         <View style={styles.detailsCard}>
                             <Text style={styles.cardSectionTitle}>Uploaded Attachments</Text>
                             
-                            {[
-                                { name: 'Beneficiary with commodities', icon: 'camera-alt' },
-                                { name: 'Front Valid ID', icon: 'assignment-ind' },
-                                { name: 'Back Valid ID', icon: 'assignment-ind' },
-                                { name: 'Receipt', icon: 'receipt' },
-                                { name: 'Other documents', icon: 'folder' },
-                            ].map((doc, idx) => (
-                                <TouchableOpacity key={idx} activeOpacity={0.7} style={styles.attachmentRow}>
-                                    <View style={styles.attachmentLeft}>
-                                        <MaterialIcons name={doc.icon} size={20} color="#7F8C8D" />
-                                        <Text style={styles.attachmentName} numberOfLines={1}>{doc.name}</Text>
-                                    </View>
-                                    <View style={styles.attachmentRight}>
-                                        <Text style={styles.viewText}>View</Text>
-                                        <MaterialIcons name="chevron-right" size={18} color="#009246" />
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
+                            {structuredCategories.map((category, idx) => {
+                                const hasData = category.allData.length > 0;
+                                const defaultIcon = getIconNameForCategory(category.label);
+                                const fileCount = category.allData.length;
+
+                                return (
+                                    <TouchableOpacity 
+                                        key={idx} 
+                                        activeOpacity={hasData ? 0.7 : 1} 
+                                        onPress={() => hasData && handleOpenViewer(category.label, category.allData)}
+                                        style={[styles.attachmentRow, !hasData && { opacity: 0.5 }]}
+                                    >
+                                        <View style={styles.attachmentLeft}>
+                                            <View style={{ width: 36, height: 36, borderRadius: 6, marginRight: 10, backgroundColor: '#EAEDED', justifyContent: 'center', alignItems: 'center' }}>
+                                                <MaterialIcons 
+                                                    name={defaultIcon} 
+                                                    size={20} 
+                                                    color="#95A5A6" 
+                                                />
+                                            </View>
+                                            
+                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={styles.attachmentName} numberOfLines={1}>
+                                                    {category.label}
+                                                </Text>
+                                                {fileCount > 1 && (
+                                                    <View style={localStyles.countBadge}>
+                                                        <Text style={localStyles.countText}>x{fileCount}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+                                        
+                                        {hasData ? (
+                                            <View style={styles.attachmentRight}>
+                                                <Text style={styles.viewText}>View</Text>
+                                                <MaterialIcons name="chevron-right" size={18} color="#009246" />
+                                            </View>
+                                        ) : (
+                                            <View style={styles.attachmentRight}>
+                                                <MaterialIcons name="block" size={16} color="#BDC3C7" />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     )}
 
-                    {/* Replacement Card 3 Placeholder for Pending Status variants */}
+                    {/* Pending Status fallback */}
                     {isPending && (
                         <View style={[styles.detailsCard, { alignItems: 'center', paddingVertical: 24, borderStyle: 'dashed', borderColor: '#E65100', borderWidth: 1.5 }]}>
                             <MaterialIcons name="cloud-upload" size={32} color="#E65100" style={{ marginBottom: 8 }} />
@@ -195,118 +284,53 @@ const TransactionDetail = () => {
                             </Text>
                         </View>
                     )}
-
-                    {/* 4.) Action Help Trigger (Hidden completely if status is Cancelled) */}
-                    {!isCancelled && (
-                        <TouchableOpacity 
-                            activeOpacity={0.7} 
-                            onPress={() => setIsHelpModalVisible(true)}
-                            style={styles.helpButton}
-                        >
-                            <MaterialIcons name="help-outline" size={20} color="#009246" style={{ marginRight: 6 }} />
-                            <Text style={styles.helpButtonText}>Need help with this transaction?</Text>
-                        </TouchableOpacity>
-                    )}
-
                 </ScrollView>
             </SafeAreaView>
 
-            {/* Bottom Sheet Modal Container for Help Operations */}
+            {/* LIGHTBOX GALERY MODAL COMPONENT */}
             <Modal
-                visible={isHelpModalVisible}
-                animationType="slide"
+                visible={viewerModalVisible}
                 transparent={true}
-                statusBarTranslucent={true}
-                onRequestClose={handleCloseHelp}
-            >
-                <TouchableOpacity 
-                    style={styles.modalOverlay} 
-                    activeOpacity={1} 
-                    onPress={handleCloseHelp}
-                >
-                    <View style={styles.bottomSheetContainer} onStartShouldSetResponder={() => true}>
-                        <View style={styles.notchIndicator} />
-                        <Text style={styles.sheetTitle}>What do you need help with?</Text>
-
-                        {/* Radio Option Rows */}
-                        {[
-                            // { key: 'cancel', label: 'Request to cancel this transaction' },
-                            { key: 'retransact', label: 'Request to re-transact this transaction' },
-                            { key: 'update_attachments', label: 'Request to update attachments' },
-                        ].filter(opt => !(isPending && opt.key === 'update_attachments')) // Dynamically strips update element out if pending
-                        .map((opt) => {
-                            const isSelected = selectedOption === opt.key;
-                            return (
-                                <TouchableOpacity
-                                    key={opt.key}
-                                    activeOpacity={0.8}
-                                    onPress={() => setSelectedOption(opt.key as HelpOption)}
-                                    style={styles.radioRow}
-                                >
-                                    <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
-                                        {isSelected && <View style={styles.radioInnerDot} />}
-                                    </View>
-                                    <Text style={styles.radioLabelText}>{opt.label}</Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-
-                        {/* Narrative Input Field */}
-                        <Text style={styles.inputLabel}>Reason / Remarks</Text>
-                        <TextInput
-                            placeholder="Please provide explicit context regarding this request..."
-                            placeholderTextColor="#95A5A6"
-                            multiline={true}
-                            numberOfLines={3}
-                            value={remarksText}
-                            onChangeText={setRemarksText}
-                            style={styles.textArea}
-                        />
-
-                        {/* Form Control Button Footers */}
-                        <View style={styles.sheetButtonContainer}>
-                            <TouchableOpacity 
-                                activeOpacity={0.7} 
-                                onPress={handleCloseHelp}
-                                style={[styles.sheetButton, styles.sheetButtonCancel]}
-                            >
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                activeOpacity={0.7} 
-                                onPress={handleSendRequest}
-                                disabled={!selectedOption}
-                                style={[styles.sheetButton, styles.sheetButtonSend, !selectedOption && { backgroundColor: '#BDC3C7' }]}
-                            >
-                                <Text style={styles.sendBtnText}>Send Request</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-
-            {/* Success Feedback Central Dialog Window */}
-            <Modal
-                visible={isSuccessModalVisible}
                 animationType="fade"
-                transparent={true}
-                statusBarTranslucent={true}
-                onRequestClose={() => setIsSuccessModalVisible(false)}
+                onRequestClose={() => setViewerModalVisible(false)}
             >
-                <View style={styles.successModalOverlay}>
-                    <View style={styles.successBox}>
-                        <MaterialIcons name="check-circle" size={54} color="#009246" />
-                        <Text style={styles.successTitle}>Request Submitted</Text>
-                        <Text style={styles.successDescription}>
-                            Your request has been filed. We will inform the Regional Field Office regarding this transaction change.
+                <View style={localStyles.modalBackground}>
+                    {/* Header View controls */}
+                    <View style={localStyles.modalHeader}>
+                        <Text style={localStyles.modalHeaderTitle} numberOfLines={1}>
+                            {viewerTitle}
                         </Text>
                         <TouchableOpacity 
-                            activeOpacity={0.8}
-                            onPress={() => setIsSuccessModalVisible(false)}
-                            style={styles.successCloseBtn}
+                            style={localStyles.closeButton} 
+                            onPress={() => setViewerModalVisible(false)}
                         >
-                            <Text style={styles.successCloseText}>Dismiss</Text>
+                            <MaterialIcons name="close" size={26} color="#FFFFFF" />
                         </TouchableOpacity>
+                    </View>
+
+                    {/* Dynamic Multi-Image Gallery Stream Content Area */}
+                    <View style={localStyles.galleryWrapper}>
+                        <ScrollView 
+                            horizontal 
+                            pagingEnabled 
+                            showsHorizontalScrollIndicator={viewerImages.length > 1}
+                            contentContainerStyle={{ alignItems: 'center' }}
+                        >
+                            {viewerImages.map((uri, index) => (
+                                <View key={index} style={localStyles.imageFrame}>
+                                    <Image 
+                                        source={{ uri }} 
+                                        style={localStyles.lightboxImage} 
+                                        resizeMode="contain"
+                                    />
+                                    {viewerImages.length > 1 && (
+                                        <Text style={localStyles.paginationText}>
+                                            {index + 1} of {viewerImages.length}
+                                        </Text>
+                                    )}
+                                </View>
+                            ))}
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -314,4 +338,70 @@ const TransactionDetail = () => {
     );
 };
 
-export default TransactionDetail;
+// Internal localized presentation sheets styling parameters
+const localStyles = StyleSheet.create({
+    countBadge: {
+        backgroundColor: '#009246',
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 1,
+        marginLeft: 8,
+    },
+    countText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    modalBackground: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        justifyContent: 'center',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 10,
+        position: 'absolute',
+        top: 20,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+    },
+    modalHeaderTitle: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '600',
+        flex: 1,
+        marginRight: 16,
+    },
+    closeButton: {
+        padding: 4,
+    },
+    galleryWrapper: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageFrame: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT * 0.7,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    lightboxImage: {
+        width: SCREEN_WIDTH - 20,
+        height: '100%',
+    },
+    paginationText: {
+        color: 'rgba(255, 255, 255, 0.7)',
+        fontSize: 14,
+        position: 'absolute',
+        bottom: -30,
+        textAlign: 'center',
+    },
+});
+
+export default TransactionDetail2;
