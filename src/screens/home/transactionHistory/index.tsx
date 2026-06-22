@@ -155,6 +155,7 @@ const TransactionHistory = () => {
         }
     };
 
+    // Helper function 
     const formatCurrency = (amount: string | number) => {
         const numericValue = typeof amount === 'string' ? parseFloat(amount) : amount;
         return new Intl.NumberFormat('en-PH', {
@@ -163,6 +164,7 @@ const TransactionHistory = () => {
         }).format(numericValue || 0);
     };
 
+    // Helper function 
     const formatDateString = (rawDate: string) => {
         return new Date(rawDate).toLocaleDateString('en-US', {
             month: 'short',
@@ -171,7 +173,7 @@ const TransactionHistory = () => {
         });
     };
 
-    // Helper function to return visual colors depending on item transaction status
+    // Helper function 
     const getStatusStyles = (status: TransactionItem['transaction_status']) => {
         switch (status) {
             case 'Completed':
@@ -179,9 +181,9 @@ const TransactionHistory = () => {
             case 'Pending':
                 return { bg: '#FFF3E0', text: '#E65100' };
             case 'Re-Transact':
-                return { bg: '#FFEBEE', text: '#C62828' }; // Soft Crimson layout
+                return { bg: '#FFEBEE', text: '#C62828' }; 
             case 'Re-Upload':
-                return { bg: '#E3F2FD', text: '#1565C0' }; // Soft Indigo layout
+                return { bg: '#E3F2FD', text: '#1565C0' }; 
             default:
                 return { bg: '#EEEEEE', text: '#424242' };
         }
