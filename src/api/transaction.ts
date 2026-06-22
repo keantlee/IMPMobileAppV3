@@ -270,25 +270,24 @@ export interface transactionDetailsPayload {
 
 export interface transactionDetailsResponsePayload {
   status: boolean;
-  info: Array<{
-    reference_no:       string;
-    transaction_id:     string;
+  trans_info: Array<{
+    voucher_details_id: string;
     category:           string;
-    sub_category:       string;
-    quantity:           number;
-    unit_type:          string;
-    total_amount:       string | number;
+    subCategory:        string;
+    quantity:           string | number;
+    unitType:           string;
+    amount:             string | number;
     remarks:            string;
-    transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
+    transac_date:       string;
   }>;
   attachments: Array<{
-    beneficiary:    string;
-    front_id:       string;
-    back_id:        string;
-    receipt:        string;
-    other_docs:     string[];
+    attachment_id: string;
+    name:          string;
+    file_name:     string;
+    image:         string; // Base64 raw string payload stream from S3
   }>;
   message?: string;
+  transaction_status: 'Completed' | 'Pending';
 }
 
 export const getTransactionDetailsMutation = () => {
@@ -302,11 +301,9 @@ export const getTransactionDetailsMutation = () => {
 
       console.log("[GET TRANSACTION DETAILS MUTATION] payload payload: ", payload);
 
-      // Create a clean payload object explicitly mapping expected keys for your Laravel backend
       let cleanPayload = { 
         transaction_id: payload.transaction_id, 
         reference_no:   payload.reference_no,
-        supplier_id:    payload.supplier_id,
         status:         payload.status,
       };
 
@@ -319,6 +316,9 @@ export const getTransactionDetailsMutation = () => {
           throw new Error(response.message || 'The database rejected this transaction request.');
       }
 
+      console.log('eeeeyyy');
+      console.log(response);
+
       return response;
     },
     onSuccess: (serverData, variables) => {
@@ -328,12 +328,13 @@ export const getTransactionDetailsMutation = () => {
       // Navigate to the transaction details screen using the passed navigation reference
       // Passing both identification keys and retrieved backend information lists
       variables.navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
-          transactionId:   variables.transaction_id,
-          referenceNo:     variables.reference_no,
-          supplierId:      variables.supplier_id,
-          status:          variables.status,
-          transactionInfo: serverData.info,
-          attachments:     serverData.attachments
+          transactionId:      variables.transaction_id,
+          referenceNo:        variables.reference_no,
+          supplierId:         variables.supplier_id,
+          status:             variables.status,
+          transactionInfo:    serverData.trans_info,
+          attachments:        serverData.attachments,
+          transactionStatus:  serverData.transaction_status
       });
     },
     onError: (error: Error) => {
