@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, BackHandler, ActivityIndicator, SectionList, TextInput, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, BackHandler, ActivityIndicator, SectionList, TextInput, ScrollView, StyleSheet, Dimensions, Modal } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -17,6 +17,7 @@ interface TransactionItem {
     supplier_id:        string;
     total_amount:       string | number;
     transact_date:      string;
+    shortname:          string;
     transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
 }
 
@@ -26,6 +27,8 @@ interface SectionData {
 }
 
 type FilterStatus = 'All' | 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TransactionHistory = () => {
     const navigation    = useNavigation<any>();
@@ -41,6 +44,10 @@ const TransactionHistory = () => {
     // Filter & search controls
     const [searchQuery, setSearchQuery]                 = useState<string>('');
     const [activeFilter, setActiveFilter]               = useState<FilterStatus>('All');
+
+    // Re-Transact Guide Modal Local States
+    const [reTransactModalVisible, setReTransactModalVisible] = useState<boolean>(false);
+    const [selectedRefNo, setSelectedRefNo] = useState<string>('');
 
     // Query mutation
     const transactionMutation   = getTransactionHistoryMutation();
@@ -128,18 +135,22 @@ const TransactionHistory = () => {
 
     const handleTransactionDetail = (item: TransactionItem) => {
         if (item.transaction_status === 'Re-Transact') {
-            // Navigate to Review Voucher Info Screen then proceed to a new transaction
-            navigation.navigate(ScreenNames.TRANSACTION_STACK.REVIEW_VOUCHER_INFO, {
-                referenceNo:    item.reference_no,
-                supplierId:     item.supplier_id,
-                isReTransact:   true,
-            });
+            setSelectedRefNo(item.reference_no || 'N/A');
+            setReTransactModalVisible(true);
+
         } else if (item.transaction_status === 'Re-Upload') {
-            // Navigate directly to the Upload Attachments Screen stack
+            /**
+             * Navigate directly to the Upload Attachments Screen stack
+             * 
+             */
             navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
+                voucherId:      item.voucher_id,
+                rsbsaNo:        item.rsbsa_no,
+                referenceNo:    item.reference_no,   
                 transactionId:  item.transaction_id,
-                referenceNo:    item.reference_no,
                 supplierId:     item.supplier_id,
+                shortname:      item.shortname,
+                prevRouteName:  "TransacionHistoryScreen"
             });
         } 
         else {
@@ -363,8 +374,178 @@ const TransactionHistory = () => {
                     )}
                 />
             )}
+
+            {/* Re-Transact Modal */}
+            <Modal
+                visible={reTransactModalVisible}
+                transparent={true}
+                animationType="fade"
+                statusBarTranslucent={true}
+                onRequestClose={() => setReTransactModalVisible(false)}
+            >
+                <View style={localStyles.overlayContainer}>
+                    <View style={localStyles.modalCard}>
+                        
+                        {/* Header Branding section */}
+                        <View style={localStyles.alertHeader}>
+                            <View style={localStyles.iconWrapper}>
+                                <MaterialIcons name="info" size={32} color="#0288D1" />
+                            </View>
+                            <Text style={localStyles.modalTitleHeader}>Re-Transact Required</Text>
+                        </View>
+
+                        {/* Content Container Body */}
+                        <ScrollView style={localStyles.bodyScroll} showsVerticalScrollIndicator={false}>
+                            <Text style={localStyles.infoAlertText}>
+                                The voucher <Text style={{ fontWeight: '700', color: '#0288D1' }}>{selectedRefNo}</Text> needs to be re-transacted.
+                            </Text>
+                            
+                            <Text style={localStyles.guideHeading}>To process the re-transact:</Text>
+
+                            {[
+                                "Scan the voucher barcode or QR sequence.",
+                                "Review voucher info and farmer KYC information.",
+                                "Add items.",
+                                "Review total added checkout details.",
+                                "Save the transaction.",
+                                "To fully complete the transaction, please upload the required attachments.",
+                                "Tap upload to save the attachments."
+                            ].map((stepText, stepIdx) => (
+                                <View key={stepIdx} style={localStyles.stepItemRow}>
+                                    <View style={localStyles.stepBadgeNumber}>
+                                        <Text style={localStyles.stepTextNumber}>{stepIdx + 1}</Text>
+                                    </View>
+                                    <Text style={localStyles.stepContentText}>{stepText}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+
+                        {/* Confirmation Button Control Footer */}
+                        <View style={localStyles.footerDock}>
+                            <TouchableOpacity 
+                                activeOpacity={0.8}
+                                onPress={() => setReTransactModalVisible(false)}
+                                style={localStyles.actionConfirmButton}
+                            >
+                                <Text style={localStyles.confirmButtonText}>UNDERSTOOD</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
+
+// Local component styles stylesheet declaration
+const localStyles = StyleSheet.create({
+    overlayContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalCard: {
+        backgroundColor: '#FFFFFF',
+        width: SCREEN_WIDTH * 0.88,
+        maxHeight: '76%',
+        borderRadius: 16,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    alertHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderColor: '#E1F5FE',
+        paddingBottom: 14,
+        marginBottom: 14,
+    },
+    iconWrapper: {
+        backgroundColor: '#E1F5FE',
+        padding: 8,
+        borderRadius: 50,
+        marginRight: 12,
+    },
+    modalTitleHeader: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#0288D1',
+    },
+    bodyScroll: {
+        flexGrow: 0,
+    },
+    infoAlertText: {
+        fontSize: 14,
+        color: '#34495E',
+        lineHeight: 20,
+        backgroundColor: '#F1F9FF',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E1F5FE',
+        marginBottom: 16,
+    },
+    guideHeading: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#7F8C8D',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 12,
+    },
+    stepItemRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+        paddingRight: 12,
+    },
+    stepBadgeNumber: {
+        backgroundColor: '#0288D1',
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 2,
+        marginRight: 10,
+    },
+    stepTextNumber: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    stepContentText: {
+        fontSize: 13,
+        color: '#2C3E50',
+        lineHeight: 18,
+        flex: 1,
+    },
+    footerDock: {
+        borderTopWidth: 1,
+        borderColor: '#F4F6F7',
+        paddingTop: 14,
+        marginTop: 14,
+    },
+    actionConfirmButton: {
+        backgroundColor: '#0288D1',
+        borderRadius: 8,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+    },
+    confirmButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 14,
+        letterSpacing: 0.5,
+    },
+});
 
 export default TransactionHistory;

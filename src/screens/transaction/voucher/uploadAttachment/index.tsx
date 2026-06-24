@@ -27,7 +27,7 @@ import { UploadAttachments } from '../../../../@types/attachment';
 import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase64';
 import { saveAttachmentMutation } from '../../../../api/transaction';
 
-import { getTransactionDetailsMutation } from '../../../../api/transaction';
+import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../../../api/transaction';
 
 interface TransactionRouteParams {
   // uploadAttachments: UploadAttachments;
@@ -37,7 +37,7 @@ interface TransactionRouteParams {
   transactionId:    string;
   supplierId:       string;
   shortname:        string;
-  prevRouteName:    'TransactionDetailScreen' | 'UploadConfirmationScreen' | string;
+  prevRouteName:    'TransactionDetailScreen' | 'TransacionHistoryScreen' | 'UploadConfirmationScreen' | string;
 }
 
 interface FormFieldType {
@@ -74,7 +74,8 @@ const UploadAttachment = () => {
 
     const attachmentMutation = saveAttachmentMutation(navigation);
 
-    const detailsMutation    = getTransactionDetailsMutation();
+    const transactionMutation   = getTransactionHistoryMutation(); 
+    const detailsMutation       = getTransactionDetailsMutation();
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -257,6 +258,16 @@ const UploadAttachment = () => {
                 status:          'Pending',
                 navigation:      navigation
             });
+        } else if (prevRouteName === 'TransacionHistoryScreen') {
+            const params = {
+                supplierId:supplierId,
+            };
+
+            console.log('[UPLOAD ATTACHMENT] Go Back to Transacion History Screen: ', params);
+
+            navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
+                supplierId: supplierId,
+            })
         } else if (prevRouteName === 'UploadConfirmationScreen') {
             navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
                 transactionId:  transactionId,
