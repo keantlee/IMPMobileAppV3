@@ -89,9 +89,6 @@ export const TransactionStackComponent: React.FC = () => {
             <TransactionStack.Screen
                 component={UploadAttachment}
                 name={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
-                // initialParams={{
-                //     uploadAttachments: MOCK_UPLOAD_ATTACHMENTS,
-                // }}
             />
             
         </TransactionStack.Navigator>
