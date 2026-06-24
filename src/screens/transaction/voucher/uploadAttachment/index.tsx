@@ -27,14 +27,17 @@ import { UploadAttachments } from '../../../../@types/attachment';
 import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase64';
 import { saveAttachmentMutation } from '../../../../api/transaction';
 
+import { getTransactionDetailsMutation } from '../../../../api/transaction';
+
 interface TransactionRouteParams {
-    // uploadAttachments: UploadAttachments;
+  // uploadAttachments: UploadAttachments;
   voucherId:        string;
   rsbsaNo:          string;
   referenceNo:      string;
   transactionId:    string;
   supplierId:       string;
   shortname:        string;
+  prevRouteName:    'TransactionDetailScreen' | 'UploadConfirmationScreen' | string;
 }
 
 interface FormFieldType {
@@ -56,12 +59,22 @@ const UploadAttachment = () => {
     console.log("[UPLOAD ATTACHMENT SCREEN] Incoming route: ", route);
 
     const routeParams           = (route.params || {}) as TransactionRouteParams;
-    const { voucherId, transactionId, rsbsaNo, referenceNo, supplierId, shortname } = routeParams;
+    const { 
+        voucherId, 
+        rsbsaNo, 
+        referenceNo, 
+        transactionId, 
+        supplierId, 
+        shortname, 
+        prevRouteName 
+    } = (route.params || {}) as TransactionRouteParams;
 
     console.log("[UPLOAD ATTACHMENT SCREEN] route params: ", routeParams);
     // console.log("[UPLOAD ATTACHMENT SCREEN] uploadAttachments: ", uploadAttachments);
 
     const attachmentMutation = saveAttachmentMutation(navigation);
+
+    const detailsMutation    = getTransactionDetailsMutation();
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -132,7 +145,6 @@ const UploadAttachment = () => {
         setValue('otherDocs', cleanFilteredSet, { shouldValidate: true });
     };
 
-    // --- FIX FOR MUTATION RESPONSE HOOK WATCHERS ---
     useEffect(() => {
         if (attachmentMutation.isError) {
             setAlertConfig({
@@ -224,8 +236,39 @@ const UploadAttachment = () => {
     const handleSyncAndGoBack = useCallback(() => {
         reset();
         attachmentMutation.reset();
-        navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
-    }, [navigation, reset]);
+
+        console.log("[UPLOAD ATTACHMENT - GO BACK] routing back with target reference name string: ", prevRouteName);
+
+        // Condition routing
+        if (prevRouteName === 'TransactionDetailScreen') {
+            const params = {
+                transactionId:  transactionId,
+                referenceNo:    referenceNo,
+                supplierId:     supplierId,
+                status:         'Pending'
+            };
+
+            console.log('[UPLOAD ATTACHMENT] Go Back to Transacion Details Screen: ', params);
+            
+            detailsMutation.mutate({
+                transaction_id:  transactionId,
+                reference_no:    referenceNo,
+                supplier_id:     supplierId,
+                status:          'Pending',
+                navigation:      navigation
+            });
+        } else if (prevRouteName === 'UploadConfirmationScreen') {
+            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
+                transactionId:  transactionId,
+                referenceNo:    referenceNo,
+                voucherId:      voucherId,
+                rsbsaNo:        rsbsaNo,
+                shortname:      shortname
+            })
+        } else {
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+        }
+    }, [navigation, reset, prevRouteName, transactionId, referenceNo, supplierId]);
 
     useEffect(() => {
         const hardwareBackAction = () => {

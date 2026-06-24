@@ -24,6 +24,9 @@ export const styles = StyleSheet.create({
         color: '#FFF',
         fontWeight: 'bold',
     },
+    backPlaceholder: {
+        width: 24,
+    },
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
