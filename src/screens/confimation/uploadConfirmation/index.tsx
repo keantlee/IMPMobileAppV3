@@ -21,7 +21,7 @@ interface UploadRouteParams {
     referenceNo?:       string;
     voucherId?:         string;
     rsbsaNo?:           string;
-    shortname?:         string
+    shortname?:         string;
 }
 
 const UploadConfirmationScreen = () => {

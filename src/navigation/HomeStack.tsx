@@ -6,6 +6,7 @@ import Home from '../screens/home';
 import ScreenNames from './screenNames';
 import TransactionHistory from '../screens/home/transactionHistory';
 import TransactionDetail from '../screens/home/transactionHistory/transactionDetail';
+import UploadAttachment from '../screens/transaction/voucher/uploadAttachment';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type HomeStackParamList = {
@@ -39,6 +40,12 @@ export const HomeStackComponent: React.FC = () => {
             <HomeStack.Screen
                 component={TransactionDetail}
                 name={ScreenNames.HOME_STACK.TRANSACTION_DETAIL}
+                options={{ animation: 'fade' }}                
+            />
+
+            <HomeStack.Screen
+                component={UploadAttachment}
+                name={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
                 options={{ animation: 'fade' }}                
             />
 
