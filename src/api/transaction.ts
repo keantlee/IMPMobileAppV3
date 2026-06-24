@@ -286,6 +286,13 @@ export interface transactionDetailsResponsePayload {
     file_name:     string;
     image:         string; // Base64 raw string payload stream from S3
   }>;
+  upload_info: Array<{
+    voucher_id:     string;
+    transaction_id: string;
+    rsbsa_no:       string;
+    supplier_id:    string; 
+    shortname:      string;
+  }>;
   message?: string;
   transaction_status: 'Completed' | 'Pending';
 }
@@ -304,6 +311,7 @@ export const getTransactionDetailsMutation = () => {
       let cleanPayload = { 
         transaction_id: payload.transaction_id, 
         reference_no:   payload.reference_no,
+        supplier_id:    payload.supplier_id,
         status:         payload.status,
       };
 
@@ -315,9 +323,6 @@ export const getTransactionDetailsMutation = () => {
       if (response.status !== true) {
           throw new Error(response.message || 'The database rejected this transaction request.');
       }
-
-      console.log('eeeeyyy');
-      console.log(response);
 
       return response;
     },
@@ -334,6 +339,7 @@ export const getTransactionDetailsMutation = () => {
           status:             variables.status,
           transactionInfo:    serverData.trans_info,
           attachments:        serverData.attachments,
+          uploadInfo:         serverData.upload_info,
           transactionStatus:  serverData.transaction_status
       });
     },

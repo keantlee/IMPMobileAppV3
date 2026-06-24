@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StatusBar, BackHandler, Modal, Dimensions, Image, StyleSheet } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { styles } from './styles';
+import ScreenNames from '../../../../navigation/screenNames';
 
 interface TransactionDetailRouteParams {
     transactionId?:   string;
@@ -14,11 +15,12 @@ interface TransactionDetailRouteParams {
     status?:          'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
     transactionInfo?: any[]; 
     attachments?:     any[]; 
+    uploadInfo?:      any[];
 }
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const TransactionDetail2 = () => {
+const TransactionDetail = () => {
     const navigation    = useNavigation<any>();
     const route         = useRoute<any>();
     const userInfo      = useAuthStore.getState().user;
@@ -29,7 +31,8 @@ const TransactionDetail2 = () => {
         supplierId, 
         status, 
         transactionInfo = [], 
-        attachments = [] 
+        attachments     = [],
+        uploadInfo      = []  
     } = (route.params || {}) as TransactionDetailRouteParams;
 
     // State management
@@ -86,12 +89,15 @@ const TransactionDetail2 = () => {
 
     const getImageUri = (base64Str: string | null) => {
         if (!base64Str) return null;
+
         let mimeType = 'image/jpeg';
-        if (base64Str.startsWith('UklG') || base64Str.substring(0, 30).includes('WEBP')) {
-            mimeType = 'image/webp';
-        } else if (base64Str.startsWith('iVBORw0KG')) {
-            mimeType = 'image/png';
-        }
+        
+        // if (base64Str.startsWith('UklG') || base64Str.substring(0, 30).includes('WEBP')) {
+        //     mimeType = 'image/webp';
+        // } else if (base64Str.startsWith('iVBORw0KG')) {
+        //     mimeType = 'image/png';
+        // }
+        
         return `data:${mimeType};base64,${base64Str}`;
     };
 
@@ -130,16 +136,35 @@ const TransactionDetail2 = () => {
 
     // Method triggered when user hits click target
     const handleOpenViewer = (label: string, dataItems: any[]) => {
+        console.log("[Click handle open viewer] dataItems: ", dataItems);
+        // 1. Extract the raw base64 images from the object array and wrap them with the correct MIME type
         const extractedUris = dataItems
-            .map(item => getImageUri(item?.image))
+            .map(item => getImageUri(item?.image)) // Uses the dynamic WebP/PNG/JPEG checker
             .filter(uri => uri !== null) as string[];
 
+        // 2. If no valid images were extracted, do nothing
         if (extractedUris.length === 0) return;
 
+        // 3. Update your state matching your viewer logic
         setViewerTitle(label);
-        setViewerImages(extractedUris);
+        setViewerImages(extractedUris); // Pass the array of proper data URIs here
         setViewerModalVisible(true);
     };
+     const handleSyncAndGoBack = useCallback(() => {
+        navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
+            supplier_id: supplierId
+        });
+     }, [navigation, supplierId]);
+
+    const renderHeader = () => (
+        <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleSyncAndGoBack} activeOpacity={0.7}>
+                <Text style={styles.backIcon}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Transaction Details</Text>
+            <View style={styles.backPlaceholder} />
+        </View>
+    );
 
     const cumulativeTotalAmount = transactionInfo.reduce((sum, item) => sum + parseFloat(item?.amount || '0'), 0);
     const { date: displayDate } = formatDateTime(transactionInfo[0]?.transac_date);
@@ -150,13 +175,14 @@ const TransactionDetail2 = () => {
                 <StatusBar barStyle="light-content" backgroundColor="#009246" />
                 
                 {/* Header */}
-                <View style={styles.header}>
+                {renderHeader()}
+                {/* <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Transaction Details</Text>
                     <View style={styles.backButtonPlaceholder} />
-                </View>
+                </View> */}
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     
@@ -232,32 +258,32 @@ const TransactionDetail2 = () => {
                                 const fileCount = category.allData.length;
 
                                 return (
-                                    <TouchableOpacity 
-                                        key={idx} 
-                                        activeOpacity={hasData ? 0.7 : 1} 
-                                        onPress={() => hasData && handleOpenViewer(category.label, category.allData)}
-                                        style={[styles.attachmentRow, !hasData && { opacity: 0.5 }]}
-                                    >
-                                        <View style={styles.attachmentLeft}>
-                                            <View style={{ width: 36, height: 36, borderRadius: 6, marginRight: 10, backgroundColor: '#EAEDED', justifyContent: 'center', alignItems: 'center' }}>
-                                                <MaterialIcons 
-                                                    name={defaultIcon} 
-                                                    size={20} 
-                                                    color="#95A5A6" 
-                                                />
-                                            </View>
+                                        <TouchableOpacity 
+                                            key={idx} 
+                                            activeOpacity={hasData ? 0.7 : 1} 
+                                            onPress={() => hasData && handleOpenViewer(category.label, category.allData)}
+                                            style={[styles.attachmentRow, !hasData && { opacity: 0.5 }]}
+                                        >
+                                            <View style={styles.attachmentLeft}>
+                                                <View style={{ width: 36, height: 36, borderRadius: 6, marginRight: 10, backgroundColor: '#EAEDED', justifyContent: 'center', alignItems: 'center' }}>
+                                                    <MaterialIcons 
+                                                        name={defaultIcon} 
+                                                        size={20} 
+                                                        color="#95A5A6" 
+                                                    />
+                                                </View>
                                             
-                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                                <Text style={styles.attachmentName} numberOfLines={1}>
-                                                    {category.label}
-                                                </Text>
-                                                {fileCount > 1 && (
-                                                    <View style={localStyles.countBadge}>
-                                                        <Text style={localStyles.countText}>x{fileCount}</Text>
-                                                    </View>
-                                                )}
+                                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                                    <Text style={styles.attachmentName} numberOfLines={1}>
+                                                        {category.label}
+                                                    </Text>
+                                                    {fileCount > 1 && (
+                                                        <View style={localStyles.countBadge}>
+                                                            <Text style={localStyles.countText}>x{fileCount}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
                                             </View>
-                                        </View>
                                         
                                         {hasData ? (
                                             <View style={styles.attachmentRight}>
@@ -277,13 +303,45 @@ const TransactionDetail2 = () => {
 
                     {/* Pending Status fallback */}
                     {isPending && (
-                        <View style={[styles.detailsCard, { alignItems: 'center', paddingVertical: 24, borderStyle: 'dashed', borderColor: '#E65100', borderWidth: 1.5 }]}>
+                        <TouchableOpacity 
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                const uploadParams = uploadInfo[0] || {};
+
+                                console.log("[TRANSACTION DETAILS - PENDING] Redirecting directly to Upload Attachments");
+
+                                navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
+                                    voucherId:      uploadParams?.voucher_id || route.params?.voucher_id,
+                                    rsbsaNo:        uploadParams?.rsbsa_no || route.params?.rsbsa_no,
+                                    referenceNo:    referenceNo,
+                                    transactionId:  transactionId,
+                                    supplierId:     supplierId,
+                                    shortname:      uploadParams?.shortname || route.params?.shortname,
+                                    prevRouteName:  "TransactionDetailScreen"
+                                }); 
+                            }}
+                            style={[
+                                styles.detailsCard, 
+                                { 
+                                    alignItems: 'center', 
+                                    paddingVertical: 24, 
+                                    borderStyle: 'dashed', 
+                                    borderColor: '#E65100', 
+                                    borderWidth: 1.5,
+                                    backgroundColor: '#FFF8F2' // Added a slight warm tint so users know it's a clickable button
+                                }
+                            ]}
+                        >
                             <MaterialIcons name="cloud-upload" size={32} color="#E65100" style={{ marginBottom: 8 }} />
                             <Text style={{ fontSize: 14, fontWeight: '600', color: '#E65100', textAlign: 'center', paddingHorizontal: 10, lineHeight: 20 }}>
                                 Please upload the required attachments to complete the transaction.
                             </Text>
-                        </View>
+                            <Text style={{ fontSize: 11, color: '#E65100', opacity: 0.8, marginTop: 4, textDecorationLine: 'underline' }}>
+                                Tap here to upload docs
+                            </Text>
+                        </TouchableOpacity>
                     )}
+
                 </ScrollView>
             </SafeAreaView>
 
@@ -393,7 +451,7 @@ const localStyles = StyleSheet.create({
     },
     lightboxImage: {
         width: SCREEN_WIDTH - 20,
-        height: '100%',
+        height: 400,
     },
     paginationText: {
         color: 'rgba(255, 255, 255, 0.7)',
@@ -404,4 +462,4 @@ const localStyles = StyleSheet.create({
     },
 });
 
-export default TransactionDetail2;
+export default TransactionDetail;
