@@ -1,4 +1,3 @@
-// 📄 Replace your src/navigation/AppStack.tsx with this blueprint:
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
