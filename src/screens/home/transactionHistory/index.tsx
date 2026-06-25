@@ -143,14 +143,26 @@ const TransactionHistory = () => {
              * Navigate directly to the Upload Attachments Screen stack
              * 
              */
-            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
+            const params = {
                 voucherId:      item.voucher_id,
                 rsbsaNo:        item.rsbsa_no,
                 referenceNo:    item.reference_no,   
                 transactionId:  item.transaction_id,
                 supplierId:     item.supplier_id,
                 shortname:      item.shortname,
-                prevRouteName:  "TransacionHistoryScreen"
+                prevRouteName:  "TransactionHistoryScreen"
+            };
+
+            console.log("[TRANSACTION HISTORY SCREEN] Re-Upload: ", params);
+
+            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
+                // voucherId:      item.voucher_id,
+                // rsbsaNo:        item.rsbsa_no,
+                referenceNo:    item.reference_no,   
+                transactionId:  item.transaction_id,
+                supplierId:     item.supplier_id,
+                // shortname:      item.shortname,
+                prevRouteName:  "TransactionHistoryScreen"
             });
         } 
         else {
