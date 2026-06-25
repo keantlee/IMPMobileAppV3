@@ -87,18 +87,18 @@ const TransactionDetail = () => {
         }
     };
 
-    const getImageUri = (base64Str: string | null) => {
-        if (!base64Str) return null;
+    const getImageUri = (imageProp: string | null) => {
+        if (!imageProp) return null;
+        
+        const cleanStr = imageProp.trim();
 
-        let mimeType = 'image/jpeg';
+        // 1. If it's already an active web link from S3, return it directly!
+        if (cleanStr.startsWith('http://') || cleanStr.startsWith('https://')) {
+            return cleanStr;
+        }
         
-        // if (base64Str.startsWith('UklG') || base64Str.substring(0, 30).includes('WEBP')) {
-        //     mimeType = 'image/webp';
-        // } else if (base64Str.startsWith('iVBORw0KG')) {
-        //     mimeType = 'image/png';
-        // }
-        
-        return `data:${mimeType};base64,${base64Str}`;
+        // 2. Fallback: If it's a raw base64 string, keep your old data-URI formatting
+        return `data:image/jpeg;base64,${cleanStr}`;
     };
 
     const getIconNameForCategory = (labelKey: string) => {
@@ -139,7 +139,7 @@ const TransactionDetail = () => {
         console.log("[Click handle open viewer] dataItems: ", dataItems);
         // 1. Extract the raw base64 images from the object array and wrap them with the correct MIME type
         const extractedUris = dataItems
-            .map(item => getImageUri(item?.image)) // Uses the dynamic WebP/PNG/JPEG checker
+            .map(item => getImageUri(item?.image)) // Uses the dynamic JPEG checker
             .filter(uri => uri !== null) as string[];
 
         // 2. If no valid images were extracted, do nothing
@@ -445,13 +445,13 @@ const localStyles = StyleSheet.create({
     },
     imageFrame: {
         width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT * 0.7,
+        height: SCREEN_HEIGHT * 0.8, // Explicitly constrain the swipeable sliding box frame
         justifyContent: 'center',
         alignItems: 'center',
     },
     lightboxImage: {
-        width: SCREEN_WIDTH - 20,
-        height: 400,
+        width: SCREEN_WIDTH,          // Pulls device viewport width constraints
+        height: '100%',               // Fills the safe image scroll box frame
     },
     paginationText: {
         color: 'rgba(255, 255, 255, 0.7)',

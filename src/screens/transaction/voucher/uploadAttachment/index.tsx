@@ -37,7 +37,7 @@ interface TransactionRouteParams {
   transactionId:    string;
   supplierId:       string;
   shortname:        string;
-  prevRouteName:    'TransactionDetailScreen' | 'TransacionHistoryScreen' | 'UploadConfirmationScreen' | string;
+  prevRouteName:    'TransactionDetailScreen' | 'TransactionHistoryScreen' | 'UploadConfirmationScreen' | string;
 }
 
 interface FormFieldType {
@@ -222,6 +222,7 @@ const UploadAttachment = () => {
                 transaction_id: transactionId,
                 voucher_id:     voucherId,
                 shortname:      shortname,
+                prevRouteName:  prevRouteName
             };
 
             attachmentMutation.mutate({ attachmentParams });
@@ -258,7 +259,7 @@ const UploadAttachment = () => {
                 status:          'Pending',
                 navigation:      navigation
             });
-        } else if (prevRouteName === 'TransacionHistoryScreen') {
+        } else if (prevRouteName === 'TransactionHistoryScreen') {
             const params = {
                 supplierId:supplierId,
             };

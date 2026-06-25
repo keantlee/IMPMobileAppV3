@@ -155,6 +155,7 @@ export interface SaveAttachmentPayload {
     transaction_id: string;
     voucher_id:     string;
     shortname:      string;
+    prevRouteName:  string;
   }
 }
 
@@ -188,11 +189,14 @@ export const saveAttachmentMutation = (navigation: any) => {
         transaction_id: payload.attachmentParams.transaction_id,
         voucher_id:     payload.attachmentParams.voucher_id,
         shortname:      payload.attachmentParams.shortname, 
+        prevRouteName:  payload.attachmentParams.prevRouteName
       };
 
       console.log("[SAVE ATTACHMENT MUTATION] clean payload: ", cleanPayload);
 
       const response = await POST<SaveAttachmentResponsePayload>(EndPoints.SAVE_ATTACHMENT, cleanPayload);
+
+      // const response = "";
 
       if (response.status !== true) {
           throw new Error(response.message || 'The database rejected this transaction update snapshot.');
@@ -202,6 +206,7 @@ export const saveAttachmentMutation = (navigation: any) => {
     },
     onSuccess: (serverData) => {
         console.log('[SAVE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
+        // let's navigate to Home Screen
     },
     onError: (error: Error) => {
         console.warn('[SAVE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
