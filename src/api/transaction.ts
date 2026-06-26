@@ -142,6 +142,18 @@ export const saveTransactionMutation = (navigation: any) => {
   });
 };
 
+/**
+ * ==================== ATTACHMENTS ==================== 
+ * 1.) Save attachment
+ *    - Target Screen: 
+ *    - Functions:
+ * 2.) Fetch attachment
+ *    - Target Screen:
+ *    - Functions:
+ * 3.) Update attachment 
+ *    - Target Screen: ReUpload.tsx
+*     - Functions:
+ */
 export interface SaveAttachmentPayload {
   attachmentParams: {
     beneficiary:    any;
@@ -199,14 +211,15 @@ export const saveAttachmentMutation = (navigation: any) => {
       // const response = "";
 
       if (response.status !== true) {
-          throw new Error(response.message || 'The database rejected this transaction update snapshot.');
+          throw new Error(response.message || '[SAVE ATTACHMENT] The database rejected this transaction update snapshot.');
       }
 
       return response;
     },
     onSuccess: (serverData) => {
         console.log('[SAVE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
-        // let's navigate to Home Screen
+        
+        // Navigate to Home Screen
     },
     onError: (error: Error) => {
         console.warn('[SAVE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
@@ -214,7 +227,155 @@ export const saveAttachmentMutation = (navigation: any) => {
   });
 };
 
-// view transaction history
+export interface fetchAttachmentPayload {
+  transaction_id: string;
+  reference_no:   string;
+  supplier_id:    string;
+  navigation:     any; 
+}
+
+export interface fetchAttachmentResponsePayload {
+  status: boolean;
+  attachments: Array<{
+    attachment_id: string;
+    name:          string;
+    file_name:     string;
+    image:         string; // Base64 raw string payload stream from S3
+  }>;
+  upload_info: Array<{
+    voucher_id:     string;
+    transaction_id: string;
+    rsbsa_no:       string;
+    supplier_id:    string; 
+    shortname:      string;
+  }>;
+  message?: string;
+}
+
+export const fetchAttachmentMutation = (navigation: any) => {
+  return useMutation<fetchAttachmentResponsePayload, Error, fetchAttachmentPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if(!netState.isConnected || !netState.isInternetReachable) {
+          throw new Error('[FETCH ATTACHMENT MUTATION] No internet connection found.');
+      }
+
+      console.log("[FETCH ATTACHMENT MUTATION] payload payload: ", payload);
+
+      let cleanPayload = { 
+        transaction_id: payload.transaction_id, 
+        reference_no:   payload.reference_no,
+        supplier_id:    payload.supplier_id,
+      };
+
+      const response = await POST<transactionDetailsResponsePayload>(
+        EndPoints.GET_TRANSACTION_DETAILS, 
+        cleanPayload
+      );
+
+      if (response.status !== true) {
+          throw new Error(response.message || 'The database rejected this transaction request.');
+      }
+
+      return response;
+    },
+    onSuccess: (serverData, variables) => {
+      console.log("[FETCH ATTACHMENT MUTATION] Server data received: ", serverData); 
+      console.log("[FETCH ATTACHMENT MUTATION] Routing execution to destination detail viewport");
+      
+      // Navigate to the transaction details screen using the passed navigation reference
+      // Passing both identification keys and retrieved backend information lists
+      variables.navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
+          transactionId:      variables.transaction_id,
+          referenceNo:        variables.reference_no,
+          supplierId:         variables.supplier_id,
+          attachments:        serverData.attachments,
+          uploadInfo:         serverData.upload_info
+      });
+    },
+    onError: (error: Error) => {
+      console.warn("[FETCH ATTACHMENT MUTATION] TanStack Exception Tracker: ", error.message);
+    }
+  });
+}
+
+export interface UpdateAttachmentPayload {
+  attachmentParams: {
+    beneficiary:    any;
+    frontID:        any;
+    backID:         any;
+    receipt:        any;
+    otherDocs:      any[];
+    rsbsa_no:       string;
+    reference_no:   string;
+    supplier_id:    string;
+    transaction_id: string;
+    voucher_id:     string;
+    shortname:      string;
+  }
+}
+
+export interface UpdateResponsePayload {
+  status: boolean;
+  message: string;
+}
+
+// update_attachment
+export const updateAttachmentMutation = (navigation: any) => {
+  return useMutation<UpdateResponsePayload, Error, UpdateAttachmentPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if (!netState.isConnected || !netState.isInternetReachable) {
+        throw new Error("No internet connection found. Please check your network and try again.");
+      }
+
+      // Construct a clean, perfectly spelled payload mapping matching your Laravel keys
+      const cleanPayload = {
+        beneficiary:    payload.attachmentParams.beneficiary, 
+        frontID:        payload.attachmentParams.frontID,
+        backID:         payload.attachmentParams.backID,
+        receipt:        payload.attachmentParams.receipt,
+        otherDocs:      payload.attachmentParams.otherDocs,
+        rsbsa_no:       payload.attachmentParams.rsbsa_no,
+        reference_no:   payload.attachmentParams.reference_no,
+        supplier_id:    payload.attachmentParams.supplier_id,
+        transaction_id: payload.attachmentParams.transaction_id,
+        voucher_id:     payload.attachmentParams.voucher_id,
+        shortname:      payload.attachmentParams.shortname
+      };
+
+      console.log("[UPDATE ATTACHMENT MUTATION] payload: ", payload);
+
+      const response = await POST<SaveAttachmentResponsePayload>(EndPoints.SAVE_ATTACHMENT, cleanPayload);
+
+      if (response.status !== true) {
+          throw new Error(response.message || '[UPDATE ATTACHMENT] The database rejected this transaction update snapshot.');
+      }
+
+      return response;
+    },
+    onSuccess: (serverData) => {
+      console.log('[UPDATE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
+
+      // Navigate to Home Screen
+    },
+    onError: (error: Error) => {
+      console.warn('[UPDATE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
+      throw new Error(`[UPDATE ATTACHMENT] Critical transmission exception encountered: ${error.message}`);
+    }
+  });
+}
+// ==================== ATTACHMENTS ==================== 
+
+/**
+ * ==================== TRANSCATION LOGS ==================== 
+ * 1.) Transaction history
+ *    - Target Screen: TransactionHistory.tsx
+ * 2.) Transaction Details
+ *    - Target Screen: TranscationDetails.tsx
+ */
 export interface transactionHistoryPayload {
   supplier_id: string;
 }
@@ -234,6 +395,7 @@ export interface transactionHistoryResponsePayload {
   message?: string;
 }
 
+// view transaction history
 export const getTransactionHistoryMutation = () => {
   return useMutation<transactionHistoryResponsePayload, Error, transactionHistoryPayload>({
     mutationFn: async (payload) => {
@@ -264,7 +426,7 @@ export const getTransactionHistoryMutation = () => {
   });
 }
 
-// view transaction details
+
 export interface transactionDetailsPayload {
   transaction_id: string;
   reference_no:   string;
@@ -302,6 +464,7 @@ export interface transactionDetailsResponsePayload {
   transaction_status: 'Completed' | 'Pending';
 }
 
+// view transaction details
 export const getTransactionDetailsMutation = () => {
   return useMutation<transactionDetailsResponsePayload, Error, transactionDetailsPayload>({
     mutationFn: async (payload) => {
@@ -353,4 +516,5 @@ export const getTransactionDetailsMutation = () => {
     }
   });
 };
+// ==================== TRANSCATION LOGS ==================== 
 
