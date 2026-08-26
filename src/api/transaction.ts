@@ -7,6 +7,7 @@ import { POST, GET } from "./config/axios";
 import ScreenNames from '../navigation/screenNames';
 import EndPoints from './config/endpoints';
 import { TransactionInfo, VoucherInfo } from '../@types/voucher';
+import { CommonActions } from '@react-navigation/native';
 
 interface ScanVoucherPayload {
   voucherCode: string;
@@ -54,6 +55,8 @@ export const scanVoucherMutation = () => {
         variables.navigation.navigate(ScreenNames.TRANSACTION_STACK.FARMER_PROFILE, serverData);
     },
     onError: (error: Error) => {
+        // we need to add here a pass parameter to scanQR UI if theres an error to know what message is the error
+        // the SCAN UI are still on the same route but show a modal error message.
         console.warn('[Scan Voucher Mutation] TanStack Exception Tracker:', error.message);
     }
   });
@@ -151,7 +154,7 @@ export const saveTransactionMutation = (navigation: any) => {
  *    - Target Screen:
  *    - Functions:
  * 3.) Update attachment 
- *    - Target Screen: ReUpload.tsx
+*    - Target Screen: ReUpload.tsx
 *     - Functions:
  */
 export interface SaveAttachmentPayload {
@@ -219,7 +222,13 @@ export const saveAttachmentMutation = (navigation: any) => {
     onSuccess: (serverData) => {
         console.log('[SAVE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
         
-        // Navigate to Home Screen
+        // Navigate to Home Screen and unmount the previous stacks
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: ScreenNames.HOME_STACK.HOME }],
+          })
+        );
     },
     onError: (error: Error) => {
         console.warn('[SAVE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
@@ -227,33 +236,45 @@ export const saveAttachmentMutation = (navigation: any) => {
   });
 };
 
-export interface fetchAttachmentPayload {
-  transaction_id: string;
-  reference_no:   string;
-  supplier_id:    string;
-  navigation:     any; 
-}
-
-export interface fetchAttachmentResponsePayload {
-  status: boolean;
-  attachments: Array<{
-    attachment_id: string;
-    name:          string;
-    file_name:     string;
-    image:         string; // Base64 raw string payload stream from S3
-  }>;
-  upload_info: Array<{
-    voucher_id:     string;
+export interface getAttachmentRequestPayload {
+  params: {
     transaction_id: string;
-    rsbsa_no:       string;
-    supplier_id:    string; 
-    shortname:      string;
-  }>;
-  message?: string;
+    reference_no:   string;
+    supplier_id:    string;
+    transac_date:   string | number;
+    prevRouteName:  string;
+  }
 }
 
-export const fetchAttachmentMutation = (navigation: any) => {
-  return useMutation<fetchAttachmentResponsePayload, Error, fetchAttachmentPayload>({
+export interface AttachmentItemS3 {
+  attachment_id: string;
+  name:          string;
+  file_name:     string;
+  image:         string; // Base64 string
+}
+
+export interface TransInfo {
+  reference_no:     string;
+  transaction_id:   string;
+  supplier_id:      string;
+  transaction_year: string | number;
+  program:          any;
+  shortname:        string;
+  rsbsa_no:         string;
+  voucher_id:       string;
+}
+
+export interface getAttachmentResponsePayload {
+  status?:       boolean;
+  trans_info:    TransInfo; // Object, not array
+  attachments:   AttachmentItemS3[];
+  upload_info:   any[];
+  isReupload:    boolean;
+  message?:      string;
+}
+
+export const getAttachmentMutation = (navigation: any) => {
+  return useMutation<getAttachmentResponsePayload, Error, getAttachmentRequestPayload>({
     mutationFn: async (payload) => {
       const netState = await NetInfo.fetch();
 
@@ -261,44 +282,40 @@ export const fetchAttachmentMutation = (navigation: any) => {
           throw new Error('[FETCH ATTACHMENT MUTATION] No internet connection found.');
       }
 
-      console.log("[FETCH ATTACHMENT MUTATION] payload payload: ", payload);
-
       let cleanPayload = { 
-        transaction_id: payload.transaction_id, 
-        reference_no:   payload.reference_no,
-        supplier_id:    payload.supplier_id,
+        transaction_id: payload.params.transaction_id, 
+        reference_no:   payload.params.reference_no,
+        supplier_id:    payload.params.supplier_id,
+        transac_date:   payload.params.transac_date,
+        prevRouteName:  payload.params.prevRouteName
       };
 
-      const response = await POST<transactionDetailsResponsePayload>(
-        EndPoints.GET_TRANSACTION_DETAILS, 
+      console.log("[FETCH ATTACHMENT MUTATION] cleanPayload: ", cleanPayload);
+
+      const response = await POST<getAttachmentResponsePayload>(
+        EndPoints.GET_ATTACHMENTS, 
         cleanPayload
       );
-
-      if (response.status !== true) {
-          throw new Error(response.message || 'The database rejected this transaction request.');
-      }
 
       return response;
     },
     onSuccess: (serverData, variables) => {
-      console.log("[FETCH ATTACHMENT MUTATION] Server data received: ", serverData); 
-      console.log("[FETCH ATTACHMENT MUTATION] Routing execution to destination detail viewport");
+      console.log("[FETCH ATTACHMENT MUTATION] Server data received: ", JSON.stringify(serverData, null, 2)); 
       
-      // Navigate to the transaction details screen using the passed navigation reference
-      // Passing both identification keys and retrieved backend information lists
-      variables.navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
-          transactionId:      variables.transaction_id,
-          referenceNo:        variables.reference_no,
-          supplierId:         variables.supplier_id,
-          attachments:        serverData.attachments,
-          uploadInfo:         serverData.upload_info
+      // Check if attachments are inside serverData.attachments OR serverData.upload_info
+      const attachmentList = serverData.attachments || serverData.upload_info || [];
+
+      navigation.navigate(ScreenNames.TRANSACTION_STACK.RE_UPLOAD_ATTACHMENTS, {
+        transInfo:     serverData.trans_info,
+        attachments:   attachmentList,
+        prevRouteName: variables.params.prevRouteName,
       });
     },
     onError: (error: Error) => {
       console.warn("[FETCH ATTACHMENT MUTATION] TanStack Exception Tracker: ", error.message);
     }
   });
-}
+};
 
 export interface UpdateAttachmentPayload {
   attachmentParams: {
@@ -331,7 +348,6 @@ export const updateAttachmentMutation = (navigation: any) => {
         throw new Error("No internet connection found. Please check your network and try again.");
       }
 
-      // Construct a clean, perfectly spelled payload mapping matching your Laravel keys
       const cleanPayload = {
         beneficiary:    payload.attachmentParams.beneficiary, 
         frontID:        payload.attachmentParams.frontID,
@@ -359,7 +375,13 @@ export const updateAttachmentMutation = (navigation: any) => {
     onSuccess: (serverData) => {
       console.log('[UPDATE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
 
-      // Navigate to Home Screen
+      // Cleanly reset back to home frame
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: ScreenNames.BOTTOM_TABS.HOME }]
+        })
+      );
     },
     onError: (error: Error) => {
       console.warn('[UPDATE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
@@ -425,7 +447,6 @@ export const getTransactionHistoryMutation = () => {
     }
   });
 }
-
 
 export interface transactionDetailsPayload {
   transaction_id: string;

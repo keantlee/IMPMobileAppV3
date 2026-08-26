@@ -6,6 +6,7 @@ const EndPoints = {
   SEND_RESET_PASSWORD_LINK:             'form_reset_password_link/sending_request',
   GET_TRANSCTION_HISTORY:               'get-transaction-history',
   GET_TRANSACTION_DETAILS:              'get-transaction-details',
+  GET_ATTACHMENTS:                      'get-attachments',
   SCAN_QR_CODE:                         'scan-qr-code',
   SAVE_TRANSACTION:                     'save-transaction',
   SAVE_ATTACHMENT:                      'save-attachment',

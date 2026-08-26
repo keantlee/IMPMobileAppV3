@@ -150,11 +150,12 @@ const TransactionDetail = () => {
         setViewerImages(extractedUris); // Pass the array of proper data URIs here
         setViewerModalVisible(true);
     };
-     const handleSyncAndGoBack = useCallback(() => {
+    
+    const handleSyncAndGoBack = useCallback(() => {
         navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
             supplier_id: supplierId
         });
-     }, [navigation, supplierId]);
+    }, [navigation, supplierId]);
 
     const renderHeader = () => (
         <View style={styles.header}>

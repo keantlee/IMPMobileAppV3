@@ -7,17 +7,14 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { styles } from './styles';
 import ScreenNames from '../../../navigation/screenNames';
-import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../../api/transaction';
+import { getTransactionHistoryMutation, getTransactionDetailsMutation, getAttachmentMutation } from '../../../api/transaction';
 
 interface TransactionItem {
-    voucher_id:         string;
-    rsbsa_no:           string;
     reference_no:       string;
     transaction_id:     string;
     supplier_id:        string;
     total_amount:       string | number;
     transact_date:      string;
-    shortname:          string;
     transaction_status: 'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
 }
 
@@ -50,8 +47,9 @@ const TransactionHistory = () => {
     const [selectedRefNo, setSelectedRefNo] = useState<string>('');
 
     // Query mutation
-    const transactionMutation   = getTransactionHistoryMutation();
-    const detailsMutation       = getTransactionDetailsMutation();
+    const transactionMutation        = getTransactionHistoryMutation();
+    const detailsMutation            = getTransactionDetailsMutation();
+    const existingAttachmentMutation = getAttachmentMutation(navigation);
 
     useEffect(() => {
         const handleBackPress = () => {
@@ -139,31 +137,17 @@ const TransactionHistory = () => {
             setReTransactModalVisible(true);
 
         } else if (item.transaction_status === 'Re-Upload') {
-            /**
-             * Navigate directly to the Upload Attachments Screen stack
-             * 
-             */
             const params = {
-                voucherId:      item.voucher_id,
-                rsbsaNo:        item.rsbsa_no,
-                referenceNo:    item.reference_no,   
-                transactionId:  item.transaction_id,
-                supplierId:     item.supplier_id,
-                shortname:      item.shortname,
-                prevRouteName:  "TransactionHistoryScreen"
+                reference_no:    item.reference_no,   
+                transaction_id:  item.transaction_id,
+                supplier_id:     item.supplier_id,
+                transac_date:    item.transact_date,
+                prevRouteName:   "TransactionHistoryScreen",
             };
 
             console.log("[TRANSACTION HISTORY SCREEN] Re-Upload: ", params);
 
-            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS, {
-                // voucherId:      item.voucher_id,
-                // rsbsaNo:        item.rsbsa_no,
-                referenceNo:    item.reference_no,   
-                transactionId:  item.transaction_id,
-                supplierId:     item.supplier_id,
-                // shortname:      item.shortname,
-                prevRouteName:  "TransactionHistoryScreen"
-            });
+            existingAttachmentMutation.mutate({ params });
         } 
         else {
             console.log("[TRANSACTION HISTORY SCREEN] Payload: ", item.reference_no);
