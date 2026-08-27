@@ -20,21 +20,29 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchCamera, launchImageLibrary, Asset, PhotoQuality } from 'react-native-image-picker';
 
-import { AttachmentSchema, AttachmentFormData, AttachmentInputData } from '../../types/schemas/AttachmentSchema';
-import ScreenNames from '../../navigation/screenNames';
+import { AttachmentSchema, AttachmentFormData, AttachmentInputData } from '../../../../types/schemas/AttachmentSchema';
+import ScreenNames from '../../../../navigation/screenNames';
 import { styles } from './styles';
-import UploadAttachment from '../transaction/voucher/uploadAttachment';
-import { converImageToBase64 } from '../../utils/convert_base64/imageBase64';
-import { fetchAttachmentMutation, updateAttachmentMutation } from '../../api/transaction';
+import UploadAttachment from '../uploadAttachment';
+import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase64';
+import { updateAttachmentMutation } from '../../../../api/transaction';
 
-interface TransactionRouteParams {
-  voucherId:        string;
-  rsbsaNo:          string;
-  referenceNo:      string;
-  transactionId:    string;
-  supplierId:       string;
-  shortname:        string;
-  prevRouteName:    string;
+interface ReUploadRouteParams {
+  transInfo: {
+    voucher_id:     string;
+    rsbsa_no:       string;
+    reference_no:   string;
+    transaction_id: string;
+    supplier_id:    string;
+    shortname:      string;
+  };
+  attachments: Array<{
+    attachment_id: string;
+    name:          string;
+    file_name:     string;
+    image:         string; // Base64 raw string payload stream from S3
+  }>;
+  prevRouteName: string;
 }
 
 interface FormFieldType {
@@ -55,18 +63,25 @@ const ReUploadAttachment = () => {
 
     console.log("[RE-UPLOAD SCREEN] Incoming route: ", route);
 
-    const routeParams = (route.params || {}) as TransactionRouteParams;
     const { 
-        voucherId, 
-        rsbsaNo, 
-        referenceNo, 
-        transactionId, 
-        supplierId, 
-        shortname,
-        prevRouteName,
-    } = (route.params || {}) as TransactionRouteParams;
+        transInfo, 
+        attachments = [], 
+        prevRouteName 
+    } = (route.params || {}) as ReUploadRouteParams;
 
     console.log("[RE-UPLOAD SCREEN] route params: ", route);
+
+    // Query mutation
+    const newAttachment = updateAttachmentMutation(navigation);
+
+    // Modal alert state
+    const [alertConfig, setAlertConfig] = useState({
+        visible:    false,
+        title:      '',
+        message:    '',
+        type: 'error' as 'error' | 'success'
+    });
+
 
     // React-hook-form and Zod
     const { control, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<AttachmentInputData>({ 
@@ -80,26 +95,14 @@ const ReUploadAttachment = () => {
         }
     });
 
-    // Query mutation
-    const currentAttachment  = fetchAttachmentMutation(navigation);
-    const newAttachment      = updateAttachmentMutation(navigation);
-
-    // Modal alert state
-    const [alertConfig, setAlertConfig] = useState({
-        visible:    false,
-        title:      '',
-        message:    '',
-        type: 'error' as 'error' | 'success'
-    });
+    // 
+    const currentFormValues = watch();
 
     //
     const [activeSelector, setActiveSelector] = useState<{ fieldName: keyof AttachmentFormData; mode: 'fixed' | 'array' } | null>(null);
     
     //
     const [lightboxUri, setLightboxUri] = useState<string | null>(null);
-
-    // 
-    const currentFormValues = watch();
 
     // 
     const triggerImagePicker = async (source: 'camera' | 'gallery') => {
@@ -151,13 +154,100 @@ const ReUploadAttachment = () => {
     };
 
     /**
-     * 1.) Add the function of fetch process of the S3 images on laravel using the currentAttachment
+     * useEffect - Map S3 fetched base64 attachments into React Hook Form slots on mount
      */
-    const getImageUri = () => {
 
-    }
+    const formatImageUri = (imageProp: any): string => {
+        // console.log("[RE-UPLOAD SCREEN] imageProp : ", imageProp);
 
-    // Query mutation useEffect for isError and isSuccess
+        if (!imageProp) return '';
+
+        // Convert to string and sanitize (strip JSON quotes, newlines, spaces)
+        let cleanStr = String(imageProp)
+            .replace(/["']/g, '')
+            .replace(/[\r\n\s]/g, '');
+
+        if (!cleanStr) return '';
+
+        // If it's already an active HTTP web URL or Data URI, return directly
+        if (cleanStr.startsWith('http://') || cleanStr.startsWith('https://') || cleanStr.startsWith('data:')) {
+            return cleanStr;
+        }
+
+        // Dynamic MIME-type detection using Base64 magic numbers
+        let mimeType = 'image/jpeg';
+        if (cleanStr.startsWith('UklGR')) {
+            mimeType = 'image/jpeg';
+            // note: this should not be acceptable format
+            // need to show an error at the validation 
+        } else if (cleanStr.startsWith('iVBORw0KGgo')) {
+            mimeType = 'image/png';
+            // note: this should not be acceptable format
+            // need to show an error at the validation 
+        } else if (cleanStr.startsWith('R0lGOD')) {
+            mimeType = 'image/gif';
+            // note: this should not be acceptable format
+            // need to show an error at the validation 
+        }
+
+        // note: only jpeg or jpg are accepted format
+
+        // console.log("[RE-UPLOAD SCREEN] check image format mimeType: ", `data:${mimeType};base64,${cleanStr}`);
+
+        return `data:${mimeType};base64,${cleanStr}`;
+    };
+
+    useEffect(() => {
+        if (!attachments || attachments.length === 0) return;
+
+        const extraDocsList: any[] = [];
+
+        attachments.forEach((att: any) => {
+            // FIX: Check all common payload locations where raw images/URLs live during re-upload
+            const rawImageData = att?.image || att?.file_path || att?.url || att?.base64_data || att?.base64;
+
+            console.log("[RE-UPLOAD] rawImageData : ", rawImageData);
+
+            if (!rawImageData) return;
+
+            const uri = formatImageUri(rawImageData);
+            if (!uri) return;
+
+            // Extract MIME type safely
+            const matchedMime = uri.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+            const mimeType = matchedMime ? matchedMime[1] : 'image/jpeg';
+
+            const fileData = {
+                uri,
+                fileName: att.file_name || att.name || att.attachment_name || 'attachment.jpg',
+                type: mimeType,
+            };
+
+            // FIX: Combine all potential identifier strings into one lowercased string for flexible matching
+            const identifier = `${att.name || ''} ${att.attachment_name || ''} ${att.attachment_type || ''} ${att.file_name || ''}`.toLowerCase();
+
+            // Categorize into specific slot fields or collect into otherDocs
+            if (identifier.includes('beneficiary') || identifier.includes('commodity')) {
+                setValue('beneficiary', fileData, { shouldValidate: true, shouldDirty: true });
+            } else if (identifier.includes('front')) {
+                setValue('frontID', fileData, { shouldValidate: true, shouldDirty: true });
+            } else if (identifier.includes('back')) {
+                setValue('backID', fileData, { shouldValidate: true, shouldDirty: true });
+            } else if (identifier.includes('receipt')) {
+                setValue('receipt', fileData, { shouldValidate: true, shouldDirty: true });
+            } else {
+                // Collect all non-matching attachments into otherDocs
+                extraDocsList.push(fileData);
+            }
+        });
+
+        // Populate otherDocs array field if any extra attachments exist
+        if (extraDocsList.length > 0) {
+            setValue('otherDocs', extraDocsList, { shouldValidate: true, shouldDirty: true });
+        }
+    }, [attachments, setValue]);
+
+    // useEffect - Query mutation useEffect for isError
     useEffect(() => {
         if (newAttachment.isError) {
             setAlertConfig({
@@ -169,6 +259,7 @@ const ReUploadAttachment = () => {
         }
     }, [newAttachment.isError, newAttachment.error]);
 
+    // useEffect - Query mutation useEffect for isSuccess
     useEffect(() => {
         if (newAttachment.isSuccess && newAttachment.data) {
             setAlertConfig({
@@ -201,20 +292,21 @@ const ReUploadAttachment = () => {
 
         if (prevRouteName === 'TransactionHistoryScreen') {
             const params = {
-                supplierId:supplierId,
+                supplierId: transInfo?.supplier_id,
             };
 
             console.log('[RE-UPLOAD SCREEN] The condition is FALSE it will navigate back to Transacion History Screen: ', params);
 
             navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
-                supplierId: supplierId,
+                supplierId: transInfo?.supplier_id,
             })
         } else {
             console.log('[RE-UPLOAD SCREEN] The condition is FALSE it will navigate back to Home Screen.');
             navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
         }
-    }, [navigation, reset, prevRouteName, supplierId]);
+    }, [navigation, reset, prevRouteName, transInfo?.supplier_id]);
 
+    // useEffect - handleSyncAndGoBack
     useEffect(() => {
         const hardwareBackAction = () => {
             handleSyncAndGoBack();
@@ -290,7 +382,7 @@ const ReUploadAttachment = () => {
             const backIDPayload         = await converImageToBase64(data.backID);
             const receiptPayload        = await converImageToBase64(data.receipt);
             const otherDocsPayload      = await Promise.all(
-                data.otherDocs.map(file => converImageToBase64(file))
+                (data.otherDocs || []).map(file => converImageToBase64(file))
             );
 
             if (!isMounted) return; // Break routine execution if component unmounted midway
@@ -316,12 +408,12 @@ const ReUploadAttachment = () => {
                     ...otherDocsPayload,
                     name: 'Other documents'
                 },
-                rsbsa_no:       rsbsaNo,
-                reference_no:   referenceNo,
-                supplier_id:    supplierId,
-                transaction_id: transactionId,
-                voucher_id:     voucherId,
-                shortname:      shortname,
+                rsbsa_no:       transInfo?.rsbsa_no,
+                reference_no:   transInfo?.reference_no,
+                supplier_id:    transInfo?.supplier_id,
+                transaction_id: transInfo?.transaction_id,
+                voucher_id:     transInfo?.voucher_id,
+                shortname:      transInfo?.shortname,
                 prevRouteName:  prevRouteName
             };
 

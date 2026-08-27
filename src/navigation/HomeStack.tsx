@@ -7,6 +7,7 @@ import ScreenNames from './screenNames';
 import TransactionHistory from '../screens/home/transactionHistory';
 import TransactionDetail from '../screens/home/transactionHistory/transactionDetail';
 import UploadAttachment from '../screens/transaction/voucher/uploadAttachment';
+import ReUploadAttachment from '../screens/transaction/voucher/reupload';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type HomeStackParamList = {
@@ -31,18 +32,35 @@ export const HomeStackComponent: React.FC = () => {
                 name={ScreenNames.HOME_STACK.HOME}
             />  
 
+            {/* 
+                Transaction History Screen
+                1.) Filter by All
+                1.) Filter by Complete Transaction
+                2.) Filter by Pending Transaction
+                3.) Filter by Re-Transact
+                4.) Filter by Re-Upload Transaction
+            */}
             <HomeStack.Screen
                 component={TransactionHistory}
                 name={ScreenNames.HOME_STACK.TRANSACTION_HISTORY}
                 options={{ animation: 'fade' }}                
             />  
 
+            {/*  
+                Transaction Detail Screen
+                1.) Use for Complete Transaction
+                2.) Use for Pending Transaction
+            */}
             <HomeStack.Screen
                 component={TransactionDetail}
                 name={ScreenNames.HOME_STACK.TRANSACTION_DETAIL}
                 options={{ animation: 'fade' }}                
             />
 
+            {/* 
+                Upload Attachment Screen use for Pending Transactions 
+                1.) Use for Pending Transaction
+            */}
             <HomeStack.Screen
                 component={UploadAttachment}
                 name={ScreenNames.TRANSACTION_STACK.UPLOAD_ATTACHMENTS}
@@ -50,54 +68,14 @@ export const HomeStackComponent: React.FC = () => {
             />
 
             {/* 
-
+                ReUpload Screen 
+                1.) Use for Re-Upload Transaction
+            */}
             <HomeStack.Screen
-                component={SearchVoucher}
-                name={constants.ScreenNames.HOME_STACK.SEARCH_VOUCHER}
-                options={{ animation: 'slide_from_bottom' }}                
-            />  
-
-            <HomeStack.Screen
-                component={EditCommodityDetails}
-                name={constants.ScreenNames.HOME_STACK.EDIT_COMMODITY_DETAILS}
-                options={{ animation: 'slide_from_right' }}                
-            />  
-
-            <HomeStack.Screen
-                component={EditCart}
-                name={constants.ScreenNames.HOME_STACK.EDIT_CART}
-                options={{ animation: 'slide_from_right' }}                
-            />  
-
-            <HomeStack.Screen
-                component={EditUploadAttachments}
-                name={constants.ScreenNames.HOME_STACK.EDIT_UPLOAD_ATTACHMENTS}
-                options={{ animation: 'slide_from_right' }}                
-            />  
-
-            <HomeStack.Screen
-                component={EditReUploadAttachments}
-                name={constants.ScreenNames.HOME_STACK.EDIT_RE_UPLOAD_ATTACHMENTS}
-                options={{ animation: 'slide_from_right' }}                
-            /> 
-
-            <HomeStack.Screen
-                component={UploadVoucherAttachments}
-                name={constants.ScreenNames.HOME_STACK.UPLOAD_VOUCHER_ATTACHMENTS}
-                options={{ animation: 'slide_from_right' }}                
-            /> 
-
-            <HomeStack.Screen
-                component={EditCommodities}
-                name={constants.ScreenNames.HOME_STACK.EDIT_COMMODITIES}
-                options={{ animation: 'slide_from_right' }}                
-            />  
-
-            <HomeStack.Screen
-                component={AddCommodityDetails}
-                name={constants.ScreenNames.HOME_STACK.ADD_COMMODITY_DETAILS}
-                options={{ animation: 'slide_from_right' }}                
-            />   */}
+                component={ReUploadAttachment}
+                name={ScreenNames.TRANSACTION_STACK.RE_UPLOAD_ATTACHMENTS}
+                options={{ animation: 'fade' }}                
+            />
         </HomeStack.Navigator>
     );
 };
