@@ -25,7 +25,7 @@ import ScreenNames from '../../../../navigation/screenNames';
 import { styles } from './styles';
 import { UploadAttachments } from '../../../../@types/attachment';
 import { converImageToBase64 } from '../../../../utils/convert_base64/imageBase64';
-import { saveAttachmentMutation } from '../../../../api/transaction';
+import { saveAttachmentMutation, updateAttachmentMutation } from '../../../../api/transaction';
 
 import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../../../api/transaction';
 
@@ -72,16 +72,19 @@ const UploadAttachment = () => {
     console.log("[UPLOAD ATTACHMENT SCREEN] route params: ", routeParams);
     // console.log("[UPLOAD ATTACHMENT SCREEN] uploadAttachments: ", uploadAttachments);
 
-    const attachmentMutation = saveAttachmentMutation(navigation);
+    const saveMutation    = saveAttachmentMutation(navigation);
+    const updateMutation  = updateAttachmentMutation(navigation);
 
     const transactionMutation   = getTransactionHistoryMutation(); 
     const detailsMutation       = getTransactionDetailsMutation();
 
+    const isSubmitting = saveMutation.isPending || updateMutation.isPending;
+
     const [alertConfig, setAlertConfig] = useState({
-        visible: false,
-        title: '',
-        message: '',
-        type: 'error' as 'error' | 'success'
+        visible:    false,
+        title:      '',
+        message:    '',
+        type:       'error' as 'error' | 'success'
     });
 
     const { control, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<AttachmentInputData>({ 
@@ -147,26 +150,26 @@ const UploadAttachment = () => {
     };
 
     useEffect(() => {
-        if (attachmentMutation.isError) {
+        if (saveMutation.isError) {
             setAlertConfig({
                 visible: true,
                 title: 'Failed to Upload',
-                message: attachmentMutation.error?.message || 'An unexpected error occurred during uploading processing. Please try again.', 
+                message: saveMutation.error?.message || 'An unexpected error occurred during uploading processing. Please try again.', 
                 type: 'error'
             });
         }
-    }, [attachmentMutation.isError, attachmentMutation.error]);
+    }, [saveMutation.isError, saveMutation.error]);
 
     useEffect(() => {
-        if (attachmentMutation.isSuccess && attachmentMutation.data) {
+        if (saveMutation.isSuccess && saveMutation.data) {
             setAlertConfig({
                 visible: true,
                 title: 'Success!',
-                message: attachmentMutation.data.message || 'Verification materials saved successfully.',
+                message: saveMutation.data.message || 'Verification materials saved successfully.',
                 type: 'success'
             });
         }
-    }, [attachmentMutation.isSuccess, attachmentMutation.data]);
+    }, [saveMutation.isSuccess, saveMutation.data]);
 
     // Handle dismissing custom modal completely and clearing stale mutation variables
     const handleCloseAlertModal = () => {
@@ -174,10 +177,10 @@ const UploadAttachment = () => {
         
         if (alertConfig.type === 'success') {
             reset();
-            attachmentMutation.reset();
+            saveMutation.reset();
             navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
         } else {
-            attachmentMutation.reset(); // Allows user to retry submitting cleanly
+            saveMutation.reset(); // Allows user to retry submitting cleanly
         }
     };
 
@@ -225,7 +228,7 @@ const UploadAttachment = () => {
                 prevRouteName:  prevRouteName
             };
 
-            attachmentMutation.mutate({ attachmentParams });
+            saveMutation.mutate({ attachmentParams });
         } catch (error) {
             if (isMounted) {
                 Alert.alert("Upload Failed", "An error occurred while compiling your images.");
@@ -237,7 +240,7 @@ const UploadAttachment = () => {
 
     const handleSyncAndGoBack = useCallback(() => {
         reset();
-        attachmentMutation.reset();
+        saveMutation.reset();
 
         console.log("[UPLOAD ATTACHMENT - GO BACK] routing back with target reference name string: ", prevRouteName);
 
@@ -335,7 +338,7 @@ const UploadAttachment = () => {
                             <TouchableOpacity 
                                 style={styles.uploadTriggerButton}
                                 onPress={() => setActiveSelector({ fieldName: item.key, mode: 'fixed' })}
-                                disabled={attachmentMutation.isPending}
+                                disabled={saveMutation.isPending}
                             >
                                 <MaterialIcons name="add-a-photo" size={22} color="#009246" />
                             </TouchableOpacity>
@@ -364,7 +367,7 @@ const UploadAttachment = () => {
                             <TouchableOpacity 
                                 style={styles.addOtherButtonCard}
                                 onPress={() => setActiveSelector({ fieldName: 'otherDocs', mode: 'array' })}
-                                disabled={attachmentMutation.isPending}
+                                disabled={saveMutation.isPending}
                             >
                                 <MaterialIcons name="note-add" size={24} color="#7F8C8D" />
                                 <Text style={styles.addOtherText}>Add Photo</Text>
@@ -387,12 +390,12 @@ const UploadAttachment = () => {
 
             <View style={styles.bottomDock}>
                 <TouchableOpacity 
-                    style={[styles.submitButton, attachmentMutation.isPending && { backgroundColor: '#A2D9B7' }]}
+                    style={[styles.submitButton, saveMutation.isPending && { backgroundColor: '#A2D9B7' }]}
                     onPress={handleSubmit(onSubmit)}
                     activeOpacity={0.8}
-                    disabled={attachmentMutation.isPending}
+                    disabled={saveMutation.isPending}
                 >
-                    {attachmentMutation.isPending ? (
+                    {saveMutation.isPending ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
                         <>
