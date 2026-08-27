@@ -10,6 +10,7 @@ const EndPoints = {
   SCAN_QR_CODE:                         'scan-qr-code',
   SAVE_TRANSACTION:                     'save-transaction',
   SAVE_ATTACHMENT:                      'save-attachment',
+  GET_FILTERED_TRANSACTIONS:            'get-filtered-transactions',
   
   VIEW_TRANSACTED_VOUCHER_INFO:         'view-transaction-info',
   GET_TRANSACTED_VOUCHERS:              'get-transacted-vouchers',

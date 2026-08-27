@@ -20,6 +20,9 @@ const ScreenNames = {
     VIEW_TRANSACTION:           'ViewTransaction',
     SEARCH_VOUCHER:             'SearchVoucher',
     UPLOAD_VOUCHER_ATTACHMENTS: 'UploadVoucherAttachments',
+    PENDING_TRANSACTIONS:       'PendingTransactions',
+    REUPLOAD_TRANSACTIONS:      'ReuploadTransactions',
+    RETRANSACT_TRANSACTIONS:    'RetransactTransactions',
   },
   TRANSACTION_STACK: {
     SCANNING:                   'ScanningScreen',
