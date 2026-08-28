@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StatusBar, BackHandler, Modal, Dimensions, Image, StyleSheet } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,6 +16,7 @@ interface TransactionDetailRouteParams {
     transactionInfo?: any[]; 
     attachments?:     any[]; 
     uploadInfo?:      any[];
+    prevRouteName?:   string;
 }
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -32,7 +33,8 @@ const TransactionDetail = () => {
         status, 
         transactionInfo = [], 
         attachments     = [],
-        uploadInfo      = []  
+        uploadInfo      = [],
+        prevRouteName
     } = (route.params || {}) as TransactionDetailRouteParams;
 
     // State management
@@ -152,10 +154,45 @@ const TransactionDetail = () => {
     };
     
     const handleSyncAndGoBack = useCallback(() => {
-        navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
-            supplier_id: supplierId
-        });
-    }, [navigation, supplierId]);
+        if (prevRouteName === 'PendingTransactionsScreen') {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.PENDING_TRANSACTIONS },
+                    ],
+                }),
+            );
+        } else if (prevRouteName === 'RetransactTransactionsScreen') {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.RETRANSACT_TRANSACTIONS },
+                    ],
+                }),
+            );
+        } else if (prevRouteName === 'RecentVoucherClaims') {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: ScreenNames.HOME_STACK.HOME }],
+                }),
+            );
+        } else {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.TRANSACTION_HISTORY, params: { supplier_id: supplierId } },
+                    ],
+                }),
+            );
+        }
+    }, [navigation, supplierId, prevRouteName]);
 
     const renderHeader = () => (
         <View style={styles.header}>
@@ -318,7 +355,9 @@ const TransactionDetail = () => {
                                     transactionId:  transactionId,
                                     supplierId:     supplierId,
                                     shortname:      uploadParams?.shortname || route.params?.shortname,
-                                    prevRouteName:  "TransactionDetailScreen"
+                                    prevRouteName:  prevRouteName === 'PendingTransactionsScreen' 
+                                        ? 'PendingTransactionsScreen' 
+                                        : "TransactionDetailScreen"
                                 }); 
                             }}
                             style={[

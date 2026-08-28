@@ -14,7 +14,7 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -262,6 +262,17 @@ const UploadAttachment = () => {
                 status:          'Pending',
                 navigation:      navigation
             });
+        } else if (prevRouteName === 'PendingTransactionsScreen') {
+            console.log('[UPLOAD ATTACHMENT] Go Back to Pending Transactions list.');
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.PENDING_TRANSACTIONS },
+                    ],
+                }),
+            );
         } else if (prevRouteName === 'TransactionHistoryScreen') {
             const params = {
                 supplierId:supplierId,
@@ -269,9 +280,15 @@ const UploadAttachment = () => {
 
             console.log('[UPLOAD ATTACHMENT] Go Back to Transacion History Screen: ', params);
 
-            navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
-                supplierId: supplierId,
-            })
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.TRANSACTION_HISTORY, params: { supplierId } },
+                    ],
+                }),
+            );
         } else if (prevRouteName === 'UploadConfirmationScreen') {
             navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
                 transactionId:  transactionId,
@@ -281,7 +298,12 @@ const UploadAttachment = () => {
                 shortname:      shortname
             })
         } else {
-            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: ScreenNames.HOME_STACK.HOME }],
+                }),
+            );
         }
     }, [navigation, reset, prevRouteName, transactionId, referenceNo, supplierId]);
 
