@@ -1,137 +1,183 @@
-// Inside your src/navigation/BottomNavBar.tsx
-import React, { useEffect } from 'react';
-import { Platform, StyleSheet, ViewStyle } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
+import { View, Platform, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute, RouteProp, ParamListBase, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Feature Screen Stack Components Imports
 import HomeStackComponent from '../HomeStack';
 import TransactionStackComponent from '../TransactionStack';
 import ProfileStackComponents from '../ProfileStack';
 import ScreenNames from '../screenNames';
 import AppIcons from '../../assets/icons';
-import { styles } from './styles';
 
-// Define the clear parameter structures for your Bottom Tab Array routes
 export type BottomTabParamList = {
-    HomeTab:             undefined;
-    ScanningTab:         undefined;
-    PayoutMonitoringTab: undefined;
-    UserProfileTab:      undefined;
+  HomeTab: undefined;
+  ScanningTab: undefined;
+  UserProfileTab: undefined;
 };
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
-/**
- * Pure Type-Safe Visibility Evaluator
- * Determines whether the bottom main navigation layout frame should display or hide 
- * based on nested children focus events.
- */
-export function getTabBarVisibility(route: RouteProp<ParamListBase, string>): 'flex' | 'none' {   
-    const routeName = getFocusedRouteNameFromRoute(route);
-    
-    console.log(`[Tab Visibility Tracker] Current Nested Route Focus Name:`, routeName);
+export function getTabBarVisibility(route: RouteProp<ParamListBase, string>): boolean {
+  const routeName = getFocusedRouteNameFromRoute(route);
 
-    // If routeName is undefined, we are transitioning or on the absolute root landing layout frame.
-    // Return 'flex' immediately and don't evaluate further logic during layout alignment shifts.
-    if (!routeName) {
-        return 'flex';
-    }
+  if (!routeName) {
+    return true;
+  }
 
-    // Exact string evaluation matches against your ScreenNames registry
-    if (
-        routeName !== ScreenNames.HOME_STACK.HOME && 
-        routeName !== ScreenNames.TRANSACTION_STACK.SCANNING
-    ) {        
-        return 'none';
-    }
-    
-    return 'flex';
+  if (
+    routeName !== ScreenNames.HOME_STACK.HOME &&
+    routeName !== ScreenNames.TRANSACTION_STACK.SCANNING
+  ) {
+    return false;
+  }
+
+  return true;
 }
+
+// Custom Tab Bar Component for proper centering
+const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+  const insets = useSafeAreaInsets();
+
+  // Check visibility from the focused route
+  const focusedRoute = state.routes[state.index];
+  const isVisible = getTabBarVisibility(focusedRoute as any);
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.tabBarWrapper, { bottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16 }]}>
+      <View style={styles.tabBarContainer}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          // Render icons based on route name
+          if (route.name === ScreenNames.BOTTOM_TABS.SCANNING) {
+            return (
+              <TouchableOpacity
+                key={route.key}
+                activeOpacity={0.8}
+                onPress={onPress}
+                style={styles.scanButton}>
+                <AppIcons.MaterialIcons
+                  name="qr-code-scanner"
+                  size={24}
+                  color="#ffffff"
+                />
+              </TouchableOpacity>
+            );
+          }
+
+          const iconName = route.name === ScreenNames.BOTTOM_TABS.HOME ? 'home-filled' : 'person-outline';
+          const iconColor = isFocused ? '#009246' : '#A0A0A0';
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              activeOpacity={0.7}
+              onPress={onPress}
+              style={styles.tabItem}>
+              <AppIcons.MaterialIcons name={iconName} size={24} color={iconColor} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
 
 interface BottomNavBarProps {
-    navigation: any; // 👈 1. Receive the native navigation prop directly from AppStack
+  navigation: any;
 }
 
-/**
- * Completely Type-Safe Bottom Tab Bar Navigator
- */
-export const BottomNavBar: React.FC<BottomNavBarProps> = ({ navigation }) => {
-    // Using your theme green color
-    const staticIconColor = '#009246'; 
+export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
+  const isFocused = useIsFocused();
 
-    // Dynamic safe-spacing values directly from the hardware operating system layer
-    const insets = useSafeAreaInsets();
+  if (isFocused) {
+    console.log(' [BottomNavBar] Tab Container is Active and Focused.');
+  }
 
-    const isFocused = useIsFocused(); 
-        
-    if (isFocused) {
-        console.log(" [BottomNavBar Layout Frame] Tab Container is explicitly Active and Focused.");
-    }
+  return (
+    <BottomTab.Navigator
+      tabBar={props => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}>
+      {/* HOME TAB */}
+      <BottomTab.Screen
+        name={ScreenNames.BOTTOM_TABS.HOME as any}
+        component={HomeStackComponent}
+      />
 
-    const platformTabHeight = Platform.OS === 'ios' ? 64 + insets.bottom : 68;
+      {/* SCAN QR TAB */}
+      <BottomTab.Screen
+        name={ScreenNames.BOTTOM_TABS.SCANNING as any}
+        component={TransactionStackComponent}
+      />
 
-    return (
-        <BottomTab.Navigator            
-            screenOptions={({ route }: { route: RouteProp<ParamListBase, string> }) => ({  
-                tabBarActiveBackgroundColor: "#FFFFFF",
-                tabBarInactiveBackgroundColor: "#FFFFFF",
-                tabBarActiveTintColor: "#009246",
-                tabBarInactiveTintColor: "#545a64",
-                tabBarLabelStyle: styles.tabBarLabelStyle,            
-                headerShown: false,
-                tabBarStyle: { 
-                    display: getTabBarVisibility(route),
-                    height: platformTabHeight,
-                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
-                    paddingTop: 8,
-                    backgroundColor: '#FFFFFF',
-                    borderTopWidth: 1,
-                    borderTopColor: '#EAEAEA',
-                } as ViewStyle,   
-            })}
-        >
-            {/* HOME TAB SCREEN */}
-            <BottomTab.Screen 
-                name={ScreenNames.BOTTOM_TABS.HOME as any}
-                component={HomeStackComponent}
-                options={{     // FIX: Changed from an arrow function () => ({}) to a clean, static Object {}
-                    tabBarShowLabel: true,
-                    tabBarLabel: 'Home',
-                    tabBarIcon: () => (
-                        <AppIcons.Octicons name="home" size={24} color={staticIconColor} />
-                    )
-                }}
-            />   
-
-            {/* VOUCHER SCANNING TAB SCREEN */}
-            <BottomTab.Screen 
-                name={ScreenNames.BOTTOM_TABS.SCANNING as any}
-                component={TransactionStackComponent}
-                options={{          
-                    tabBarShowLabel: true,       
-                    tabBarLabel: 'Scan QR',             
-                    tabBarIcon: () => (
-                        <AppIcons.MaterialIcons name="qr-code-scanner" size={30} color={staticIconColor} />
-                    )
-                }}
-            />
-
-            {/* USER PROFILE TAB SCREEN */}
-            <BottomTab.Screen 
-                name={ScreenNames.BOTTOM_TABS.PROFILE as any}
-                component={ProfileStackComponents}
-                options={{             
-                    tabBarShowLabel: true,
-                    tabBarLabel: 'Profile',      
-                    tabBarIcon: () => (
-                        <AppIcons.MaterialIcons name="person" size={30} color={staticIconColor} />
-                    )
-                }}
-            />
-        </BottomTab.Navigator>
-    );
+      {/* PROFILE TAB */}
+      <BottomTab.Screen
+        name={ScreenNames.BOTTOM_TABS.PROFILE as any}
+        component={ProfileStackComponents}
+      />
+    </BottomTab.Navigator>
+  );
 };
+
+const styles = StyleSheet.create({
+  tabBarWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  tabBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 27,
+    height: 54,
+    paddingHorizontal: 16,
+    gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  tabItem: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#009246',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -16,
+    shadowColor: '#009246',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+});
 
 export default BottomNavBar;

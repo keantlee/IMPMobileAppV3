@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, BackHandler, ActivityIndicator, SectionList, TextInput, ScrollView, StyleSheet, Dimensions, Modal } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -53,7 +53,12 @@ const TransactionHistory = () => {
 
     useEffect(() => {
         const handleBackPress = () => {
-            navigation.goBack();
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: ScreenNames.HOME_STACK.HOME }],
+                }),
+            );
             return true;
         };
 

@@ -1,196 +1,566 @@
-import React from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, StatusBar } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { styles } from './styles';
 import { useAuthStore } from '../../store/useAuthStore';
-import { RenderModules } from '../../components/cards'; 
 import AppIcons from '../../assets/icons';
 import ScreenNames from '../../navigation/screenNames';
+import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../api/transaction';
 
 interface HomeProps {
-    navigation: any;
+  navigation: any;
 }
 
-interface IListItem {
-    id: string;
-    refNo: string;
-    transactDate: string;
-    amount: string;
-    status: string;
+// --- Metric Cards (1st Row) ---
+interface MetricCardProps {
+  title: string;
+  count: number;
+  icon: string;
+  iconFamily: 'MaterialIcons' | 'MaterialCommunityIcons' | 'Ionicons';
+  color: string;
+  bgColor: string;
+  onPress: () => void;
 }
 
-const mockTransactions: IListItem[] = [
-    { id: '1', refNo: 'REF-SVZ-8831', transactDate: 'May 22, 2026', amount: '₱15,000.00', status: 'Success' },
-    { id: '2', refNo: 'REF-RFDV-9912', transactDate: 'May 20, 2026', amount: '₱5,000.00', status: 'Success' },
-    { id: '3', refNo: 'REF-RFDV-4412', transactDate: 'May 19, 2026', amount: '₱7,500.00', status: 'Success' },
-    { id: '4', refNo: 'REF-CFDV-1029', transactDate: 'May 15, 2026', amount: '₱3,000.00', status: 'Success' },
-    { id: '5', refNo: 'REF-SVZ-3321', transactDate: 'May 12, 2026', amount: '₱15,000.00', status: 'Success' },
-];
+const MetricCard = ({ title, count, icon, iconFamily, color, bgColor, onPress }: MetricCardProps) => {
+  const IconComponent =
+    iconFamily === 'MaterialCommunityIcons'
+      ? MaterialCommunityIcons
+      : iconFamily === 'Ionicons'
+        ? Ionicons
+        : MaterialIcons;
 
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={{
+        flex: 1,
+        backgroundColor: '#ffffff',
+        borderRadius: 14,
+        padding: 12,
+        marginHorizontal: 4,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+      }}>
+      {/* Icon + Count aligned horizontally */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <View
+          style={{
+            backgroundColor: bgColor,
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <IconComponent name={icon} size={18} color={color} />
+        </View>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: '800',
+            color: '#1A1A1A',
+          }}>
+          {count}
+        </Text>
+      </View>
+      {/* Title at bottom, aligned right */}
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: '600',
+          color: '#7A7A7A',
+          textTransform: 'uppercase',
+          letterSpacing: 0.3,
+          textAlign: 'right',
+        }}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+// --- Feature Menu Card (2nd Row) ---
+interface FeatureCardProps {
+  title: string;
+  description: string;
+  icon: string;
+  iconFamily: 'MaterialIcons' | 'MaterialCommunityIcons' | 'Ionicons';
+  color: string;
+  bgColor: string;
+  onPress: () => void;
+}
+
+const FeatureCard = ({ title, description, icon, iconFamily, color, bgColor, onPress }: FeatureCardProps) => {
+  const IconComponent =
+    iconFamily === 'MaterialCommunityIcons'
+      ? MaterialCommunityIcons
+      : iconFamily === 'Ionicons'
+        ? Ionicons
+        : MaterialIcons;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={{
+        backgroundColor: '#ffffff',
+        width: '48%',
+        borderRadius: 14,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}>
+      <View
+        style={{
+          backgroundColor: bgColor,
+          width: 38,
+          height: 38,
+          borderRadius: 10,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 10,
+        }}>
+        <IconComponent name={icon} size={18} color={color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A', marginBottom: 1 }}>
+          {title}
+        </Text>
+        <Text numberOfLines={2} style={{ fontSize: 10, color: '#8E8E8E', lineHeight: 13 }}>
+          {description}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// --- Main Home Screen ---
 const Home = ({ navigation }: HomeProps) => {
-    const userProfile   = useAuthStore((state) => state.user);
-    const fullName      = userProfile?.fullName;
-    const supplierName  = userProfile?.supplierName;
+  const userProfile = useAuthStore(state => state.user);
+  const fullName = userProfile?.fullName;
+  const supplierName = userProfile?.supplierName;
+  const supplierId = userProfile?.userId;
 
-    const handleViewRegisteredPrograms = () => console.warn('View Registered Programs');
-    const handleViewAccreditation      = () => console.warn('View Accreditation');
-    
-    const handleViewTransactionHistory = () => {
-        console.warn('Proceed to Transaction History Screen');
+  // Transaction history state
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
 
-        navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY)
-    };
-    
-    const handleScanQR                 = () => console.log('Opening Scanner view...');
+  // Mutations
+  const transactionHistoryMutation = getTransactionHistoryMutation();
+  const transactionDetailsMutation = getTransactionDetailsMutation();
 
-    return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-            
-            {/* Header Identity Block */}
-            <View style={{
-                paddingHorizontal: 20,
-                paddingTop: 16,
-                paddingBottom: 20,
-                backgroundColor: '#009246',
-                borderBottomLeftRadius: 24,
-                borderBottomRightRadius: 24,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                elevation: 3,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8
+  // Fetch recent transactions on mount
+  useEffect(() => {
+    if (supplierId) {
+      transactionHistoryMutation.mutate(
+        { supplier_id: supplierId },
+        {
+          onSuccess: data => {
+            setRecentTransactions(data.data?.slice(0, 8) || []);
+          },
+        },
+      );
+    }
+  }, [supplierId]);
+
+  // TODO: Replace with real counts from API/store
+  const pendingCount = recentTransactions.filter(t => t.transaction_status === 'Pending').length;
+  const reUploadCount = recentTransactions.filter(t => t.transaction_status === 'Re-Upload').length;
+  const reTransactCount = recentTransactions.filter(t => t.transaction_status === 'Re-Transact').length;
+
+  const handleNavigateTransactionHistory = () => {
+    navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY);
+  };
+
+  const handleNavigatePrograms = () => {
+    console.warn('Navigate to Office Info screen');
+  };
+
+  const handleNavigateAccreditation = () => {
+    console.warn('Navigate to Accreditation screen');
+  };
+
+  const handleNavigateDocumentation = () => {
+    console.warn('Navigate to Documentation screen');
+  };
+
+  const handleNavigatePending = () => {
+    navigation.navigate(ScreenNames.HOME_STACK.PENDING_TRANSACTIONS);
+  };
+
+  const handleNavigateReUpload = () => {
+    navigation.navigate(ScreenNames.HOME_STACK.REUPLOAD_TRANSACTIONS);
+  };
+
+  const handleNavigateReTransact = () => {
+    navigation.navigate(ScreenNames.HOME_STACK.RETRANSACT_TRANSACTIONS);
+  };
+
+  const handleTransactionPress = (item: any) => {
+    transactionDetailsMutation.mutate(
+      {
+        transaction_id: item.transaction_id,
+        reference_no: item.reference_no,
+        supplier_id: item.supplier_id,
+        status: item.transaction_status,
+        navigation,
+      },
+      {
+        onSuccess: (serverData, variables) => {
+          navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_DETAIL, {
+            transactionId: variables.transaction_id,
+            referenceNo: variables.reference_no,
+            supplierId: variables.supplier_id,
+            status: variables.status,
+            transactionInfo: serverData.trans_info,
+            attachments: serverData.attachments,
+            uploadInfo: serverData.upload_info,
+            transactionStatus: serverData.transaction_status,
+            prevRouteName: 'RecentVoucherClaims',
+          });
+        },
+      },
+    );
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'Pending':
+        return { bg: '#FFF3E0', text: '#E65100' };
+      case 'Re-Transact':
+        return { bg: '#FFEBEE', text: '#C62828' };
+      case 'Re-Upload':
+        return { bg: '#E3F2FD', text: '#1565C0' };
+      default:
+        return { bg: '#F5F5F5', text: '#616161' };
+    }
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F6FA' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#009246" />
+
+      {/* Header */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 24,
+          backgroundColor: '#009246',
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+        }}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: '600',
+              color: 'rgba(255,255,255,0.8)',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
             }}>
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Welcome Back
-                    </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginVertical: 2 }}>
-                        {fullName}
-                    </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 12, color: '#ffffff', fontWeight: '600' }}>
-                        📍 {supplierName}
-                    </Text>
-                </View>
+            Welcome Back
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 16,
+              fontWeight: '800',
+              color: '#ffffff',
+              marginTop: 2,
+            }}>
+            {fullName}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.85)',
+              fontWeight: '500',
+              marginTop: 2,
+            }}>
+            {supplierName}
+          </Text>
+        </View>
 
-                <TouchableOpacity 
-                    style={{ width: 35, height: 35, borderRadius: 22, backgroundColor: '#E0F2F1', justifyContent: 'center', alignItems: 'center' }}
-                    onPress={() => console.warn('Go to profile screen')}
-                >
-                    <Image source={AppIcons.userIcon || { uri: 'https://placehold.co/100' }} style={{ width: 30, height: 30 }} />
-                </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => console.warn('Go to profile screen')}>
+          <Image
+            source={AppIcons.userIcon || { uri: 'https://placehold.co/100' }}
+            style={{ width: 28, height: 28, borderRadius: 14 }}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Scrollable Content */}
+      <FlatList
+        data={null}
+        renderItem={null}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={{ marginTop: 20 }}>
+            {/* Section: Status Overview (1st Row - 3 Metric Cards) */}
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 12,
+                marginLeft: 4,
+              }}>
+              Status Overview
+            </Text>
+
+            <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+              <MetricCard
+                title="Pending"
+                count={pendingCount}
+                icon="hourglass-empty"
+                iconFamily="MaterialIcons"
+                color="#E67E22"
+                bgColor="#FFF3E0"
+                onPress={handleNavigatePending}
+              />
+              <MetricCard
+                title="Re-Upload"
+                count={reUploadCount}
+                icon="cloud-upload"
+                iconFamily="MaterialIcons"
+                color="#2196F3"
+                bgColor="#E3F2FD"
+                onPress={handleNavigateReUpload}
+              />
+              <MetricCard
+                title="Re-Transact"
+                count={reTransactCount}
+                icon="refresh"
+                iconFamily="MaterialIcons"
+                color="#E53935"
+                bgColor="#FFEBEE"
+                onPress={handleNavigateReTransact}
+              />
             </View>
 
-            {/* Main Dynamic Scrolling Screen Frame */}
-            <FlatList
-                data={null} // We set data to null because we use ListHeaderComponent as our dashboard layout builder
-                renderItem={null}
-                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }}
-                showsVerticalScrollIndicator={false}
-                ListHeaderComponent={
-                    <View style={{ marginTop: 20 }}>
-                        
-                        {/* 4 Dashboard Metric Quadrants */}
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#2C3E50', marginBottom: 12 }}>
-                            Menu
-                        </Text>
-                        
-                        <RenderModules 
-                            handleViewTransactionHistory={handleViewTransactionHistory}
-                            handleViewRegisteredPrograms={handleViewRegisteredPrograms}
-                            handleViewAccreditation={handleViewAccreditation}
-                            handleScanQR={handleScanQR}
-                        />
+            {/* Section: Menu Features (2nd Row - 2x2 Grid) */}
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 12,
+                marginLeft: 4,
+              }}>
+              Menu
+            </Text>
 
-                        {/* The unified transaction card container */}
-                        <View style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: 16,
-                            padding: 16,
-                            marginTop: 16,
-                            marginHorizontal: 2, // KEY FIX: Creates a tiny breathing room inside the container so shadows don't clip!
-                            borderWidth: 1,
-                            borderColor: '#EFEFEF',
-                            
-                            // 360-Degree Premium Shadow Configuration
-                            shadowColor: '#000000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.06,
-                            shadowRadius: 10,
-                            elevation: 4 // Crisp elevation for modern Android devices
-                        }}>
-                            
-                            {/* Card Header Section */}
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: 16
-                            }}>
-                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#2C3E50' }}>
-                                    Recent Voucher Claims
-                                </Text>
-                                <TouchableOpacity onPress={handleViewTransactionHistory}>
-                                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#3498DB' }}>
-                                        See All
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+              }}>
+              <FeatureCard
+                title="Transaction Logs"
+                description="Review claimed voucher transactions"
+                icon="receipt-long"
+                iconFamily="MaterialIcons"
+                color="#E65100"
+                bgColor="#FFF3E0"
+                onPress={handleNavigateTransactionHistory}
+              />
+              <FeatureCard
+                title="Office Info"
+                description="View registered programs"
+                icon="business"
+                iconFamily="MaterialIcons"
+                color="#1B5E20"
+                bgColor="#E8F5E9"
+                onPress={handleNavigatePrograms}
+              />
+              <FeatureCard
+                title="Accreditation"
+                description="Check supplier accreditation status"
+                icon="verified"
+                iconFamily="MaterialIcons"
+                color="#4A148C"
+                bgColor="#F3E5F5"
+                onPress={handleNavigateAccreditation}
+              />
+              <FeatureCard
+                title="Documentation"
+                description="Guides and reference documents"
+                icon="folder-open"
+                iconFamily="MaterialIcons"
+                color="#0D47A1"
+                bgColor="#E3F2FD"
+                onPress={handleNavigateDocumentation}
+              />
+            </View>
 
-                            {/* Loop rendering the latest 5 transactions cleanly inside this secure card panel */}
-                            {mockTransactions.map((item) => (
-                                <TouchableOpacity 
-                                    key={item.id}
-                                    activeOpacity={0.7}
-                                    style={{
-                                        backgroundColor: '#FAFAFA',
-                                        padding: 14,
-                                        borderRadius: 10,
-                                        marginBottom: 10,
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        borderWidth: 1,
-                                        borderColor: '#EAEAEA'
-                                    }}
-                                >
-                                    <View>
-                                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#2C3E50', marginBottom: 4 }}>
-                                            {item.refNo}
-                                        </Text>
-                                        <Text style={{ fontSize: 12, color: '#95A5A6' }}>
-                                            {item.transactDate}
-                                        </Text>
-                                    </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#2E7D32', marginBottom: 4 }}>
-                                            {item.amount}
-                                        </Text>
-                                        <View style={{
-                                            backgroundColor: '#E8F5E9',
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 2,
-                                            borderRadius: 4
-                                        }}>
-                                            <Text style={{ fontSize: 10, color: '#2E7D32', fontWeight: '600' }}>
-                                                {item.status}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+            {/* Section: Recent Voucher Claims */}
+            <View
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 16,
+                padding: 16,
+                marginTop: 8,
+                borderWidth: 1,
+                borderColor: '#F0F0F0',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 8,
+                elevation: 3,
+              }}>
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 14,
+                }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#2C3E50' }}>
+                  Recent Voucher Claims
+                </Text>
+                <TouchableOpacity onPress={handleNavigateTransactionHistory}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#3498DB' }}>
+                    See All
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
+              {/* Loading State */}
+              {transactionHistoryMutation.isPending && (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#009246" />
+                  <Text style={{ fontSize: 12, color: '#8E8E8E', marginTop: 8 }}>
+                    Loading transactions...
+                  </Text>
+                </View>
+              )}
+
+              {/* Empty State */}
+              {!transactionHistoryMutation.isPending && recentTransactions.length === 0 && (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <MaterialIcons name="receipt-long" size={36} color="#D0D0D0" />
+                  <Text style={{ fontSize: 12, color: '#8E8E8E', marginTop: 8 }}>
+                    No recent transactions
+                  </Text>
+                </View>
+              )}
+
+              {/* Transaction List */}
+              {recentTransactions.map(item => {
+                const statusColor = getStatusColor(item.transaction_status);
+                return (
+                  <TouchableOpacity
+                    key={item.transaction_id}
+                    activeOpacity={0.7}
+                    onPress={() => handleTransactionPress(item)}
+                    style={{
+                      backgroundColor: '#FAFAFA',
+                      padding: 12,
+                      borderRadius: 10,
+                      marginBottom: 8,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#EAEAEA',
+                    }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#2C3E50', marginBottom: 3 }}>
+                        {item.reference_no}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#95A5A6' }}>
+                        {item.transact_date}
+                      </Text>
                     </View>
-                }
-            />
-        </SafeAreaView>
-    );
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <View
+                        style={{
+                          backgroundColor: statusColor.bg,
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 4,
+                        }}>
+                        <Text style={{ fontSize: 10, color: statusColor.text, fontWeight: '600' }}>
+                          {item.transaction_status}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Loading overlay for detail navigation */}
+              {transactionDetailsMutation.isPending && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255,255,255,0.7)',
+                    borderRadius: 16,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <ActivityIndicator size="small" color="#009246" />
+                </View>
+              )}
+            </View>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
 };
 
 export default Home;

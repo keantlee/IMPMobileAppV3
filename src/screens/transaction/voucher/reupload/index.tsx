@@ -14,7 +14,7 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -297,12 +297,34 @@ const ReUploadAttachment = () => {
 
             console.log('[RE-UPLOAD SCREEN] The condition is FALSE it will navigate back to Transacion History Screen: ', params);
 
-            navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY, {
-                supplierId: transInfo?.supplier_id,
-            })
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.TRANSACTION_HISTORY, params: { supplierId: transInfo?.supplier_id } },
+                    ],
+                }),
+            );
+        } else if (prevRouteName === 'ReuploadTransactionsScreen') {
+            console.log('[RE-UPLOAD SCREEN] Navigating back to Re-Upload Transactions list.');
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        { name: ScreenNames.HOME_STACK.HOME },
+                        { name: ScreenNames.HOME_STACK.REUPLOAD_TRANSACTIONS },
+                    ],
+                }),
+            );
         } else {
             console.log('[RE-UPLOAD SCREEN] The condition is FALSE it will navigate back to Home Screen.');
-            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: ScreenNames.HOME_STACK.HOME }],
+                }),
+            );
         }
     }, [navigation, reset, prevRouteName, transInfo?.supplier_id]);
 

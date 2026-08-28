@@ -8,6 +8,9 @@ import TransactionHistory from '../screens/home/transactionHistory';
 import TransactionDetail from '../screens/home/transactionHistory/transactionDetail';
 import UploadAttachment from '../screens/transaction/voucher/uploadAttachment';
 import ReUploadAttachment from '../screens/transaction/voucher/reupload';
+import PendingTransactions from '../screens/home/statusTransactions/pending';
+import ReuploadTransactions from '../screens/home/statusTransactions/reupload';
+import RetransactTransactions from '../screens/home/statusTransactions/retransact';
 
 // 1. Declare the type structure for perfect internal navigation safety
 export type HomeStackParamList = {
@@ -75,6 +78,27 @@ export const HomeStackComponent: React.FC = () => {
                 component={ReUploadAttachment}
                 name={ScreenNames.TRANSACTION_STACK.RE_UPLOAD_ATTACHMENTS}
                 options={{ animation: 'fade' }}                
+            />
+
+            {/* Pending Transactions List */}
+            <HomeStack.Screen
+                component={PendingTransactions}
+                name={ScreenNames.HOME_STACK.PENDING_TRANSACTIONS}
+                options={{ animation: 'fade' }}
+            />
+
+            {/* Re-Upload Transactions List */}
+            <HomeStack.Screen
+                component={ReuploadTransactions}
+                name={ScreenNames.HOME_STACK.REUPLOAD_TRANSACTIONS}
+                options={{ animation: 'fade' }}
+            />
+
+            {/* Re-Transact Transactions List */}
+            <HomeStack.Screen
+                component={RetransactTransactions}
+                name={ScreenNames.HOME_STACK.RETRANSACT_TRANSACTIONS}
+                options={{ animation: 'fade' }}
             />
         </HomeStack.Navigator>
     );

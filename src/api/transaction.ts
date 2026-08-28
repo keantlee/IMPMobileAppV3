@@ -539,3 +539,68 @@ export const getTransactionDetailsMutation = () => {
 };
 // ==================== TRANSCATION LOGS ==================== 
 
+
+
+/**
+ * ==================== FILTERED TRANSACTIONS ====================
+ * Used by Home Screen status cards (Pending, Re-Upload, Re-Transact)
+ */
+export interface filteredTransactionsPayload {
+  supplier_id: string;
+  status: 'Pending' | 'Re-Upload' | 'Re-Transact';
+}
+
+export interface filteredTransactionsResponsePayload {
+  status: boolean;
+  data: Array<{
+    voucher_id:         string;
+    rsbsa_no:           string;
+    reference_no:       string;
+    transaction_id:     string;
+    supplier_id:        string;
+    total_amount:       string | number;
+    transact_date:      string;
+    transaction_status: 'Pending' | 'Re-Upload' | 'Re-Transact';
+  }>;
+  message?: string;
+}
+
+// get_filtered_transactions
+export const getFilteredTransactionsMutation = () => {
+  return useMutation<filteredTransactionsResponsePayload, Error, filteredTransactionsPayload>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if (!netState.isConnected || !netState.isInternetReachable) {
+        throw new Error('[GET FILTERED TRANSACTIONS] No internet connection found.');
+      }
+
+      console.log('[GET FILTERED TRANSACTIONS] payload:', payload);
+
+      const cleanPayload = {
+        supplier_id: payload.supplier_id,
+        status: payload.status,
+      };
+
+      console.log('[GET FILTERED TRANSACTIONS] payload:', cleanPayload);
+
+      const response = await POST<filteredTransactionsResponsePayload>(
+        EndPoints.GET_FILTERED_TRANSACTIONS,
+        cleanPayload,
+      );
+
+      if (response.status !== true) {
+        throw new Error(response.message || 'Failed to fetch filtered transactions.');
+      }
+
+      return response;
+    },
+    onSuccess: serverData => {
+      console.log('[GET FILTERED TRANSACTIONS] Server data received:', serverData);
+    },
+    onError: (error: Error) => {
+      console.warn('[GET FILTERED TRANSACTIONS] Exception:', error.message);
+    },
+  });
+};
+// ==================== FILTERED TRANSACTIONS ====================
