@@ -198,15 +198,24 @@ const Home = ({ navigation }: HomeProps) => {
   };
 
   const handleNavigatePrograms = () => {
-    console.warn('Navigate to Office Info screen');
+    navigation.navigate(ScreenNames.BOTTOM_TABS.PROFILE, {
+      screen: ScreenNames.PROFILE_STACK.OFFICE_INFO,
+      params: { prevRouteName: 'HomeScreen' },
+    });
   };
 
   const handleNavigateAccreditation = () => {
-    console.warn('Navigate to Accreditation screen');
+    navigation.navigate(ScreenNames.BOTTOM_TABS.PROFILE, {
+      screen: ScreenNames.PROFILE_STACK.ACCREDITATION,
+      params: { prevRouteName: 'HomeScreen' },
+    });
   };
 
   const handleNavigateDocumentation = () => {
-    console.warn('Navigate to Documentation screen');
+    navigation.navigate(ScreenNames.BOTTOM_TABS.PROFILE, {
+      screen: ScreenNames.PROFILE_STACK.DOCUMENTATION,
+      params: { prevRouteName: 'HomeScreen' },
+    });
   };
 
   const handleNavigatePending = () => {
@@ -327,7 +336,7 @@ const Home = ({ navigation }: HomeProps) => {
             justifyContent: 'center',
             alignItems: 'center',
           }}
-          onPress={() => console.warn('Go to profile screen')}>
+          onPress={() => navigation.navigate(ScreenNames.BOTTOM_TABS.PROFILE)}>
           <Image
             source={AppIcons.userIcon || { uri: 'https://placehold.co/100' }}
             style={{ width: 28, height: 28, borderRadius: 14 }}
