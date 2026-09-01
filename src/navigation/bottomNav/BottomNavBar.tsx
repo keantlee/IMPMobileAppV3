@@ -27,7 +27,8 @@ export function getTabBarVisibility(route: RouteProp<ParamListBase, string>): bo
 
   if (
     routeName !== ScreenNames.HOME_STACK.HOME &&
-    routeName !== ScreenNames.TRANSACTION_STACK.SCANNING
+    routeName !== ScreenNames.TRANSACTION_STACK.SCANNING &&
+    routeName !== ScreenNames.PROFILE_STACK.PROFILE_MAIN
   ) {
     return false;
   }
@@ -120,6 +121,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
       <BottomTab.Screen
         name={ScreenNames.BOTTOM_TABS.HOME as any}
         component={HomeStackComponent}
+        listeners={({ navigation: nav }) => ({
+          tabPress: (e: any) => {
+            nav.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+              screen: ScreenNames.HOME_STACK.HOME,
+            });
+          },
+        })}
       />
 
       {/* SCAN QR TAB */}
@@ -132,6 +140,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
       <BottomTab.Screen
         name={ScreenNames.BOTTOM_TABS.PROFILE as any}
         component={ProfileStackComponents}
+        listeners={({ navigation: nav }) => ({
+          tabPress: (e: any) => {
+            // Reset profile stack to main screen when tab is pressed directly
+            nav.navigate(ScreenNames.BOTTOM_TABS.PROFILE, {
+              screen: ScreenNames.PROFILE_STACK.PROFILE_MAIN,
+            });
+          },
+        })}
       />
     </BottomTab.Navigator>
   );

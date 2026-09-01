@@ -37,6 +37,14 @@ const ScreenNames = {
     REVIEW_TRANSACTION:         'ReviewTransaction',
     RE_UPLOAD_ATTACHMENTS:      'ReUploadAttachment',
   },
+  PROFILE_STACK: {
+    PROFILE_MAIN:       'ProfileMain',
+    MANAGE_ACCOUNT:     'ManageAccount',
+    OFFICE_INFO:        'OfficeInfo',
+    DOCUMENTATION:      'Documentation',
+    ACCREDITATION:      'Accreditation',
+    APP_INFORMATION:    'AppInformation',
+  },
 } as const;
 
 // Optional: Useful type utilities if you need to reference these types elsewhere
@@ -45,5 +53,6 @@ export type AppStackScreens =         typeof ScreenNames.APP_STACK[keyof typeof 
 export type BottomTabScreens =        typeof ScreenNames.BOTTOM_TABS[keyof typeof ScreenNames.BOTTOM_TABS];
 export type HomeStackScreens =        typeof ScreenNames.HOME_STACK[keyof typeof ScreenNames.HOME_STACK];
 export type TransactionStackScreens = typeof ScreenNames.TRANSACTION_STACK[keyof typeof ScreenNames.TRANSACTION_STACK];
+export type ProfileStackScreens =     typeof ScreenNames.PROFILE_STACK[keyof typeof ScreenNames.PROFILE_STACK];
 
 export default ScreenNames;
