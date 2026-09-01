@@ -11,6 +11,9 @@ const EndPoints = {
   SAVE_TRANSACTION:                     'save-transaction',
   SAVE_ATTACHMENT:                      'save-attachment',
   GET_FILTERED_TRANSACTIONS:            'get-filtered-transactions',
+  GET_PROFILE:                          'get-profile',
+  UPDATE_PROFILE:                       'update-profile',
+  GET_ACCREDITATION:                    'get-accreditation',
   
   VIEW_TRANSACTED_VOUCHER_INFO:         'view-transaction-info',
   GET_TRANSACTED_VOUCHERS:              'get-transacted-vouchers',
