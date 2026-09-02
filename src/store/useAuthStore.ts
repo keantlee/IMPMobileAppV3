@@ -1,14 +1,19 @@
 import { create } from 'zustand';
 
 interface UserData {
-    userId:         string;
-    email:          string;
-    fullName:       string;
-    role:           string;
-    supplierName?:  string;
-    regName?:       string;
-    programs?:      any[];
-    supplierInfo?:  any;
+    userId:            string;
+    email:             string;
+    fullName:          string;
+    role:              string;
+    supplierName?:     string;
+    regName?:          string;
+    programs?:         any[];
+    supplierInfo?:     any;
+    // Office Info: main vs branch identifiers (from verify_otp response)
+    roleId?:           string | number; // 6 = main office, 7 = branch office
+    supplierType?:     string;          // 'main' | 'branch'
+    supplierGroupId?:  string;          // supplier.supplier_group_id (group key)
+    groupSupplierId?:  string;          // users.group_supplier_id (head/group ref)
 }
 
 interface AuthState {

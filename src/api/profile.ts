@@ -184,4 +184,48 @@ export const getAccreditationMutation = () => {
     },
   });
 };
+
+// --- Get Certificate ---
+export interface GetCertificatePayload {
+  supplier_id: string;
+  program_id: string;
+}
+
+export interface GetCertificateResponse {
+  status: boolean;
+  url?: string; // Presigned S3 URL (valid ~60 minutes)
+  filename?: string;
+  program_name?: string;
+  shortname?: string;
+  message?: string;
+}
+
+/**
+ * Imperative fetch for the active certificate of accreditation.
+ * Returns a temporary presigned S3 URL the client can open (lightbox)
+ * or download (RNFS). Intended to be called from a button handler,
+ * so it is a plain async function rather than a React Query hook.
+ */
+export const fetchCertificate = async (
+  payload: GetCertificatePayload,
+): Promise<GetCertificateResponse> => {
+  const netState = await NetInfo.fetch();
+
+  if (!netState.isConnected || !netState.isInternetReachable) {
+    throw new Error('No internet connection found. Please check your network and try again.');
+  }
+
+  console.log('[GET CERTIFICATE] payload:', payload);
+
+  const response = await POST<GetCertificateResponse>(EndPoints.GET_CERTIFICATE, {
+    supplier_id: payload.supplier_id,
+    program_id: payload.program_id,
+  });
+
+  if (response.status !== true || !response.url) {
+    throw new Error(response.message || 'Failed to fetch certificate.');
+  }
+
+  return response;
+};
 // ==================== PROFILE MODULE ====================

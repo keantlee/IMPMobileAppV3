@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Platform, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { getFocusedRouteNameFromRoute, RouteProp, ParamListBase, useIsFocused } from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, RouteProp, ParamListBase, useIsFocused, CommonActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import HomeStackComponent from '../HomeStack';
@@ -123,8 +123,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
         component={HomeStackComponent}
         listeners={({ navigation: nav }) => ({
           tabPress: (e: any) => {
+            // Pressing the Home tab should always land on the Home root screen.
+            // Navigating with an explicit nested reset clears any deeper screen
+            // the stack was left on, without dispatching POP_TO_TOP on the tab
+            // navigator (which throws "not handled by any navigator").
+            e.preventDefault();
             nav.navigate(ScreenNames.BOTTOM_TABS.HOME, {
               screen: ScreenNames.HOME_STACK.HOME,
+              params: {},
             });
           },
         })}
@@ -142,10 +148,21 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
         component={ProfileStackComponents}
         listeners={({ navigation: nav }) => ({
           tabPress: (e: any) => {
-            // Reset profile stack to main screen when tab is pressed directly
-            nav.navigate(ScreenNames.BOTTOM_TABS.PROFILE, {
-              screen: ScreenNames.PROFILE_STACK.PROFILE_MAIN,
-            });
+            // Reset the Profile stack to its main screen when the tab is pressed.
+            // The stack preserves its last route (e.g. Accreditation reached from
+            // Home), and a plain navigate won't pop it. Navigating with an explicit
+            // nested state (index 0, single ProfileMain route) forces the stack
+            // back to its root regardless of how deep it was.
+            e.preventDefault();
+            nav.dispatch(
+              CommonActions.navigate({
+                name: ScreenNames.BOTTOM_TABS.PROFILE,
+                params: {
+                  screen: ScreenNames.PROFILE_STACK.PROFILE_MAIN,
+                  params: {},
+                },
+              }),
+            );
           },
         })}
       />

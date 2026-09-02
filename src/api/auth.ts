@@ -325,27 +325,42 @@ export const verifyOtpMutation = (navigation: any) => {
 
             return response;
         },
-        onSuccess: (serverData, variables) => {
+        onSuccess: (serverData: any, variables) => {
             console.log('[Otp] Verified Successfully on Backend!', serverData);
             
             // Extract the carried profile metadata safely
             const cachedParams = variables.loginParams;
 
+            // The verify_otp response carries the authoritative profile record.
+            // It includes the main/branch identifiers we need for Office Info.
+            const serverUser     = serverData?.data || {};
+            const serverPrograms = serverData?.programs;
+            const serverInfo     = serverData?.supplierInfo || serverData?.supplier_info;
+
             if (cachedParams) {
-                // SAFE EXTRACTOR: Gracefully read keys whether they are CamelCase or Snake_case
-                const extractedUserId       = cachedParams.userId || cachedParams.user_id;
-                const extractedEmail        = cachedParams.email;
-                const extractedSupplierName = cachedParams.supplierName || cachedParams.supplier_name;
-                const extractedFullName     = cachedParams.fullName || cachedParams.full_name;
-                const extractedRegName      = cachedParams.regName || cachedParams.reg_name;
-                const extractedPrograms     = cachedParams.programs;
-                const extractedRole         = cachedParams.role;
-                const extractedSupplierInfo = cachedParams.supplierInfo || cachedParams.supplier_info;
+                // SAFE EXTRACTOR: Gracefully read keys whether they are CamelCase or Snake_case.
+                // Prefer the server response, fall back to the cached login params.
+                const extractedUserId       = serverUser.user_id || cachedParams.userId || cachedParams.user_id;
+                const extractedEmail        = serverUser.email || cachedParams.email;
+                const extractedSupplierName = serverUser.supplier_name || cachedParams.supplierName || cachedParams.supplier_name;
+                const extractedFullName     = serverUser.full_name || cachedParams.fullName || cachedParams.full_name;
+                const extractedRegName      = serverUser.reg_name || cachedParams.regName || cachedParams.reg_name;
+                const extractedPrograms     = serverPrograms || cachedParams.programs;
+                const extractedRole         = serverUser.role || cachedParams.role;
+                const extractedSupplierInfo = serverInfo || cachedParams.supplierInfo || cachedParams.supplier_info;
+
+                // Office Info: main vs branch identifiers (role_id 6 = main, 7 = branch)
+                const extractedRoleId          = serverUser.role_id;
+                const extractedSupplierType    = serverUser.supplier_type;
+                const extractedSupplierGroupId = serverUser.supplier_group_id;
+                const extractedGroupSupplierId = serverUser.group_supplier_id;
 
                 console.log('[Otp Success Parsing Verification]:', {
                     extractedUserId,
                     extractedEmail,
-                    extractedFullName
+                    extractedFullName,
+                    extractedSupplierType,
+                    extractedRoleId,
                 });
 
                 // Ensure we actually caught the User ID string before hitting storage layers
@@ -355,14 +370,18 @@ export const verifyOtpMutation = (navigation: any) => {
                 }
 
                 const finalAuthSession = {
-                    userId:       extractedUserId,
-                    email:        extractedEmail,
-                    supplierName: extractedSupplierName,
-                    fullName:     extractedFullName,
-                    regName:      extractedRegName,                            
-                    programs:     extractedPrograms,
-                    role:         extractedRole,
-                    supplierInfo: extractedSupplierInfo,
+                    userId:          extractedUserId,
+                    email:           extractedEmail,
+                    supplierName:    extractedSupplierName,
+                    fullName:        extractedFullName,
+                    regName:         extractedRegName,                            
+                    programs:        extractedPrograms,
+                    role:            extractedRole,
+                    supplierInfo:    extractedSupplierInfo,
+                    roleId:          extractedRoleId,
+                    supplierType:    extractedSupplierType,
+                    supplierGroupId: extractedSupplierGroupId,
+                    groupSupplierId: extractedGroupSupplierId,
                 };
 
                 console.log('[Otp Success] Mapping full session into application state:', finalAuthSession);
