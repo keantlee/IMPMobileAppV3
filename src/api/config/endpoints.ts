@@ -14,6 +14,18 @@ const EndPoints = {
   GET_PROFILE:                          'get-profile',
   UPDATE_PROFILE:                       'update-profile',
   GET_ACCREDITATION:                    'get-accreditation',
+  GET_CERTIFICATE:                      'get-certificate',
+
+  // Office Info module
+  GET_OFFICE_INFO:                      'get-office-info',
+  GET_OFFICE_DETAIL:                    'get-office-detail',
+  GET_OFFICE_REGIONS:                   'get-office-regions',
+  GET_OFFICE_PROVINCES:                 'get-office-provinces',
+  GET_OFFICE_MUNICIPALITIES:            'get-office-municipalities',
+  GET_OFFICE_BARANGAYS:                 'get-office-barangays',
+  GET_OFFICE_BANKS:                     'get-office-banks',
+  UPDATE_OFFICE:                        'update-office',
+  ADD_BRANCH:                           'add-branch',
   
   VIEW_TRANSACTED_VOUCHER_INFO:         'view-transaction-info',
   GET_TRANSACTED_VOUCHERS:              'get-transacted-vouchers',

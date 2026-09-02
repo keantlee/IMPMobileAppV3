@@ -7,6 +7,8 @@ import OfficeInfo from '../screens/profile/officeInfo';
 import Documentation from '../screens/profile/documentation';
 import Accreditation from '../screens/profile/accreditation';
 import AppInformation from '../screens/profile/appInformation';
+import EditOffice from '../screens/profile/officeInfo/editOffice';
+import AddBranch from '../screens/profile/officeInfo/addBranch';
 import ScreenNames from './screenNames';
 
 export type ProfileStackParamList = {
@@ -36,6 +38,16 @@ const ProfileStackComponents: React.FC = () => {
         name={ScreenNames.PROFILE_STACK.OFFICE_INFO}
         component={OfficeInfo}
         options={{ animation: 'fade' }}
+      />
+      <Stack.Screen
+        name={ScreenNames.PROFILE_STACK.OFFICE_EDIT}
+        component={EditOffice}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name={ScreenNames.PROFILE_STACK.OFFICE_ADD_BRANCH}
+        component={AddBranch}
+        options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen
         name={ScreenNames.PROFILE_STACK.DOCUMENTATION}
