@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, Alert, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { useBarcodeScannerOutput, Barcode } from 'react-native-vision-camera-barcode-scanner';
 // tracks when this screen becomes active/focused
 import { useNavigation } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
 import { scanVoucherMutation } from '../../../api/transaction';
+import StatusModal, { StatusModalConfig } from '../../../components/statusModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SCAN_BOX_SIZE = 250; 
@@ -21,7 +22,17 @@ const VoucherQR = () => {
     const isFocused = useIsFocused();
 
     // 1. Initialize the mutation at the top root level of the component!
-    const { mutate: verifyVoucher, isPending } = scanVoucherMutation();
+    const scanMutation = scanVoucherMutation();
+    const { mutate: verifyVoucher, isPending } = scanMutation;
+
+    // Modal shown when the backend rejects the voucher (e.g. fully claimed) or
+    // any error occurs during scanning.
+    const [statusModal, setStatusModal] = useState<StatusModalConfig>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error',
+    });
 
     useEffect(() => {
         if (!hasPermission) {
@@ -40,11 +51,34 @@ const VoucherQR = () => {
         }
     }, [isFocused]);
 
+    // Surface any backend rejection (e.g. voucher fully claimed) or error in a
+    // modal. The mutationFn throws with the server message on status !== true.
+    useEffect(() => {
+        if (scanMutation.isError) {
+            setStatusModal({
+                visible: true,
+                title: 'Voucher Not Valid',
+                message:
+                    scanMutation.error?.message ||
+                    'This voucher cannot be processed. Please try another.',
+                type: 'error',
+            });
+        }
+    }, [scanMutation.isError, scanMutation.error]);
+
+    // Dismiss the modal, clear the mutation state, and re-enable scanning.
+    const handleCloseModal = () => {
+        setStatusModal(prev => ({ ...prev, visible: false }));
+        scanMutation.reset();
+        setIsScanning(true);
+    };
+
     const barcodeOutput = useBarcodeScannerOutput({
         barcodeFormats: ['qr-code'],
         onBarcodeScanned(barcodes: Barcode[]) {
-            // Block processing if camera is paused, blurred, OR currently handling an API transaction request
-            if (barcodes.length === 0 || !isScanning || !isFocused || isPending) return;
+            // Block processing if camera is paused, blurred, an error modal is
+            // open, OR currently handling an API transaction request.
+            if (barcodes.length === 0 || !isScanning || !isFocused || isPending || statusModal.visible) return;
 
             const rawBarcode = barcodes[0] as any;
             const scannedValue = rawBarcode.displayValue || rawBarcode.rawValue || rawBarcode.value || rawBarcode.text;
@@ -120,6 +154,14 @@ const VoucherQR = () => {
                     </View>
                 </View>
             </View>
+
+            {/* Backend rejection / error feedback */}
+            <StatusModal
+                config={statusModal}
+                confirmText="SCAN AGAIN"
+                onConfirm={handleCloseModal}
+                onRequestClose={handleCloseModal}
+            />
         </View>
     );
 };
