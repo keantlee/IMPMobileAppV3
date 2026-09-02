@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Alert, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { clearSession } from '../../utils/session';
 import ScreenNames from '../../navigation/screenNames';
 import AppIcons from '../../assets/icons';
+import StatusModal, { StatusModalConfig } from '../../components/statusModal';
 
 interface MenuItem {
   id: string;
@@ -29,29 +30,34 @@ const Profile = () => {
   const supplierName = userProfile?.supplierName || '';
   const email = userProfile?.email || '';
 
+  // Custom logout confirmation modal state.
+  const [logoutModal, setLogoutModal] = useState<StatusModalConfig>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'warning',
+  });
+
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            clearSession();
-            clearAuth();
-          },
-        },
-      ],
-    );
+    setLogoutModal({
+      visible: true,
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      type: 'warning',
+    });
+  };
+
+  const confirmLogout = () => {
+    setLogoutModal(prev => ({ ...prev, visible: false }));
+    clearSession();
+    clearAuth();
   };
 
   const menuItems: MenuItem[] = [
     {
       id: 'manage_account',
-      title: 'Manage Account',
-      description: 'View and edit your profile',
+      title: 'Account',
+      description: 'View your account information',
       icon: 'person',
       color: '#1565C0',
       bgColor: '#E3F2FD',
@@ -241,6 +247,17 @@ const Profile = () => {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Custom logout confirmation modal */}
+      <StatusModal
+        config={logoutModal}
+        showCancel
+        destructive
+        cancelText="CANCEL"
+        confirmText="LOGOUT"
+        onCancel={() => setLogoutModal(prev => ({ ...prev, visible: false }))}
+        onConfirm={confirmLogout}
+      />
     </SafeAreaView>
   );
 };

@@ -41,6 +41,8 @@ const ScreenNames = {
     PROFILE_MAIN:       'ProfileMain',
     MANAGE_ACCOUNT:     'ManageAccount',
     OFFICE_INFO:        'OfficeInfo',
+    OFFICE_EDIT:        'OfficeEdit',
+    OFFICE_ADD_BRANCH:  'OfficeAddBranch',
     DOCUMENTATION:      'Documentation',
     ACCREDITATION:      'Accreditation',
     APP_INFORMATION:    'AppInformation',

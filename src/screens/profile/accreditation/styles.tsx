@@ -21,6 +21,29 @@ export const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    backgroundColor: '#F5F6FA',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1A1A1A',
+    marginLeft: 8,
+    padding: 0,
+  },
   listContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -61,6 +84,22 @@ export const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     overflow: 'hidden',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   infoRow: {
     flexDirection: 'row',
@@ -121,5 +160,50 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E8E',
     marginTop: 10,
+  },
+
+  // ==================== Certificate Lightbox ====================
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+  },
+  lightboxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 14,
+    gap: 12,
+  },
+  lightboxTitle: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  lightboxBody: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#1A1A1A',
+  },
+  lightboxWebView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  lightboxLoader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  lightboxLoaderText: {
+    color: '#ffffff',
+    fontSize: 13,
+    marginTop: 12,
   },
 });
