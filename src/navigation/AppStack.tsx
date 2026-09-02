@@ -7,6 +7,8 @@ import ScreenNames from './screenNames';
 // Screen Imports
 import Authentication from '../screens/authentication'; 
 import LogIn from '../screens/login';
+import Register from '../screens/register';
+import ForgotPassword from '../screens/forgotPassword';
 import Otp from '../screens/otp';
 import BottomNavBar from './bottomNav/BottomNavBar';
 
@@ -35,6 +37,16 @@ export const AppStack = () => {
                         <Stack.Screen 
                             component={LogIn} 
                             name={ScreenNames.APP_STACK.LOGIN} 
+                        />
+                        <Stack.Screen 
+                            component={Register} 
+                            name={ScreenNames.APP_STACK.REGISTER} 
+                            options={{ animation: 'slide_from_right' }}
+                        />
+                        <Stack.Screen 
+                            component={ForgotPassword} 
+                            name={ScreenNames.APP_STACK.FORGOT_PASSWORD} 
+                            options={{ animation: 'slide_from_right' }}
                         />
                         <Stack.Screen 
                             component={Otp} 
