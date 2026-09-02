@@ -3,6 +3,7 @@ const ScreenNames = {
     AUTHENTICATION:       'Authentication',
     MAIN_TAB:             'MainTabs',
     LOGIN:                'Login',
+    REGISTER:             'Register',
     FORGOT_PASSWORD:      'ForgotPassword',
     VERIFY_OTP:           'VerifyOtp',
     MAINTENANCE:          'Maintenance',

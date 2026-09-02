@@ -407,3 +407,126 @@ export const verifyOtpMutation = (navigation: any) => {
         }
     });
 };
+
+
+// ==================== FORGOT PASSWORD ====================
+export interface ForgotPasswordPayload {
+    email: string;
+}
+
+export interface ForgotPasswordResponse {
+    status: boolean;
+    message?: string;
+}
+
+// forgot_password
+// useMutation hook (transaction.ts pattern): connectivity guard -> POST ->
+// status validation, with onSuccess / onError logging. The backend emails a
+// reset link to the client's inbox.
+export const forgotPasswordMutation = () => {
+    return useMutation<ForgotPasswordResponse, Error, ForgotPasswordPayload>({
+        mutationFn: async (payload) => {
+            const netState = await NetInfo.fetch();
+
+            if (!netState.isConnected || !netState.isInternetReachable) {
+                throw new Error('[FORGOT PASSWORD MUTATION] No internet connection found.');
+            }
+
+            console.log('[FORGOT PASSWORD MUTATION] payload: ', payload);
+
+            const response = await POST<ForgotPasswordResponse>(EndPoints.FORGOT_PASSWORD, {
+                email: payload.email,
+            });
+
+            if (response.status !== true) {
+                throw new Error(response.message || 'Unable to send the reset link.');
+            }
+
+            return response;
+        },
+        onSuccess: (serverData) => {
+            console.log('[FORGOT PASSWORD MUTATION] Server data received: ', serverData);
+        },
+        onError: (error: Error) => {
+            console.warn('[FORGOT PASSWORD MUTATION] TanStack Exception Tracker: ', error.message);
+        },
+    });
+};
+// ==================== FORGOT PASSWORD ====================
+
+
+// verify_reset_otp
+export interface VerifyResetOtpPayload {
+    email: string;
+    otp: string;
+}
+
+export const verifyResetOtpMutation = () => {
+    return useMutation<ForgotPasswordResponse, Error, VerifyResetOtpPayload>({
+        mutationFn: async (payload) => {
+            const netState = await NetInfo.fetch();
+
+            if (!netState.isConnected || !netState.isInternetReachable) {
+                throw new Error('[VERIFY RESET OTP MUTATION] No internet connection found.');
+            }
+
+            console.log('[VERIFY RESET OTP MUTATION] payload: ', payload);
+
+            const response = await POST<ForgotPasswordResponse>(EndPoints.VERIFY_RESET_OTP, {
+                email: payload.email,
+                otp: payload.otp,
+            });
+
+            if (response.status !== true) {
+                throw new Error(response.message || 'The code is invalid or has expired.');
+            }
+
+            return response;
+        },
+        onSuccess: (serverData) => {
+            console.log('[VERIFY RESET OTP MUTATION] Server data received: ', serverData);
+        },
+        onError: (error: Error) => {
+            console.warn('[VERIFY RESET OTP MUTATION] TanStack Exception Tracker: ', error.message);
+        },
+    });
+};
+
+// reset_password
+export interface ResetPasswordPayload {
+    email: string;
+    otp: string;
+    new_password: string;
+}
+
+export const resetPasswordMutation = () => {
+    return useMutation<ForgotPasswordResponse, Error, ResetPasswordPayload>({
+        mutationFn: async (payload) => {
+            const netState = await NetInfo.fetch();
+
+            if (!netState.isConnected || !netState.isInternetReachable) {
+                throw new Error('[RESET PASSWORD MUTATION] No internet connection found.');
+            }
+
+            console.log('[RESET PASSWORD MUTATION] resetting password for: ', payload.email);
+
+            const response = await POST<ForgotPasswordResponse>(EndPoints.RESET_PASSWORD, {
+                email: payload.email,
+                otp: payload.otp,
+                new_password: payload.new_password,
+            });
+
+            if (response.status !== true) {
+                throw new Error(response.message || 'Unable to reset your password.');
+            }
+
+            return response;
+        },
+        onSuccess: (serverData) => {
+            console.log('[RESET PASSWORD MUTATION] Server data received: ', serverData);
+        },
+        onError: (error: Error) => {
+            console.warn('[RESET PASSWORD MUTATION] TanStack Exception Tracker: ', error.message);
+        },
+    });
+};
