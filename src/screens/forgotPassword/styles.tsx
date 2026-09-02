@@ -5,18 +5,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingBottom: 40,
   },
-
-  // Top brand banner
   headerBanner: {
     backgroundColor: '#009246',
     paddingTop: 56,
-    paddingBottom: 60,
+    paddingBottom: 56,
     alignItems: 'center',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
@@ -26,11 +21,15 @@ export const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-
-  logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+  backBtn: {
+    position: 'absolute',
+    top: 48,
+    left: 16,
+  },
+  iconCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -41,30 +40,18 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-
-  logo: {
-    height: 96,
-    width: 96,
-  },
-
   bannerTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: '#ffffff',
-    textAlign: 'center',
-    paddingHorizontal: 24,
     letterSpacing: 0.3,
   },
-
   bannerSubtitle: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
     marginTop: 4,
     fontWeight: '500',
   },
-
-  // Card that overlaps the banner
   card: {
     backgroundColor: '#ffffff',
     marginHorizontal: 20,
@@ -77,31 +64,27 @@ export const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-
-  welcomeTitle: {
+  cardTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 2,
+    marginBottom: 6,
   },
-
-  welcomeSubtitle: {
+  cardSubtitle: {
     fontSize: 13,
     color: '#8E8E8E',
+    lineHeight: 19,
     marginBottom: 20,
   },
-
   inputWrapper: {
-    marginBottom: 14,
+    marginBottom: 18,
   },
-
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
     marginBottom: 6,
   },
-
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -112,40 +95,26 @@ export const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     paddingHorizontal: 12,
   },
-
   inputIcon: {
     marginRight: 8,
   },
-
   input: {
     flex: 1,
     fontSize: 14,
     color: '#1A1A1A',
     padding: 0,
   },
-
   inputError: {
     borderColor: '#EF4444',
     backgroundColor: '#FEF2F2',
   },
-
   errorText: {
     color: '#EF4444',
     fontSize: 11,
     marginTop: 4,
     paddingLeft: 2,
   },
-
-  fpText: {
-    fontSize: 13,
-    color: '#009246',
-    fontWeight: '600',
-    textAlign: 'right',
-    marginTop: 2,
-    marginBottom: 20,
-  },
-
-  logInBtn: {
+  submitBtn: {
     justifyContent: 'center',
     alignItems: 'center',
     height: 50,
@@ -157,77 +126,27 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-
   btnDisabled: {
     backgroundColor: '#a3d9b9',
     shadowOpacity: 0,
     elevation: 0,
   },
-
-  btnText: {
+  submitBtnText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 1,
   },
-
-  // Divider "or"
-  dividerRow: {
+  backToLogin: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E7EB',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-
-  // Registration link
-  registerRow: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
+    gap: 4,
+    marginTop: 18,
   },
-  registerPrompt: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  registerLink: {
+  backToLoginText: {
     fontSize: 13,
     color: '#009246',
     fontWeight: '700',
-  },
-
-  // Secondary outlined register button
-  registerBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 50,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#009246',
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  registerBtnText: {
-    color: '#009246',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  footerText: {
-    textAlign: 'center',
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 24,
   },
 });

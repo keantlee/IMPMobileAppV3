@@ -26,6 +26,15 @@ const EndPoints = {
   GET_OFFICE_BANKS:                     'get-office-banks',
   UPDATE_OFFICE:                        'update-office',
   ADD_BRANCH:                           'add-branch',
+
+  // Merchant registration module
+  GET_PROGRAMS:                         'get-programs',
+  REGISTER_MERCHANT:                    'register-merchant',
+
+  // Forgot password
+  FORGOT_PASSWORD:                      'forgot-password',
+  VERIFY_RESET_OTP:                     'verify-reset-otp',
+  RESET_PASSWORD:                       'reset-password',
   
   VIEW_TRANSACTED_VOUCHER_INFO:         'view-transaction-info',
   GET_TRANSACTED_VOUCHERS:              'get-transacted-vouchers',
