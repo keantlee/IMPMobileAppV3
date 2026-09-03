@@ -15,7 +15,16 @@ interface TransactionDetailRouteParams {
     status?:          'Completed' | 'Pending' | 'Re-Transact' | 'Re-Upload';
     transactionInfo?: any[]; 
     attachments?:     any[]; 
-    uploadInfo?:      any[];
+    // Pending transactions return upload_info as a single object; completed
+    // transactions return an empty array. Type it permissively and read fields
+    // defensively.
+    uploadInfo?:      {
+        voucher_id?:     string;
+        transaction_id?: string;
+        rsbsa_no?:       string;
+        supplier_id?:    string;
+        shortname?:      string;
+    } | any[];
     prevRouteName?:   string;
 }
 
@@ -26,6 +35,8 @@ const TransactionDetail = () => {
     const route         = useRoute<any>();
     const userInfo      = useAuthStore.getState().user;
     
+    const routeParams = (route.params || {}) as TransactionDetailRouteParams;
+
     const { 
         transactionId, 
         referenceNo, 
@@ -33,9 +44,11 @@ const TransactionDetail = () => {
         status, 
         transactionInfo = [], 
         attachments     = [],
-        uploadInfo      = [],
+        uploadInfo      = {},
         prevRouteName
     } = (route.params || {}) as TransactionDetailRouteParams;
+
+    console.log("[TRANSACTION DETAILS - PENDING] route params: ", routeParams);
 
     // State management
     const [isHelpModalVisible, setIsHelpModalVisible] = useState<boolean>(false);
@@ -344,7 +357,16 @@ const TransactionDetail = () => {
                         <TouchableOpacity 
                             activeOpacity={0.8}
                             onPress={() => {
-                                const uploadParams = uploadInfo[0] || {};
+                                // Pending transactions provide upload_info as an
+                                // object; guard against the empty-array (completed)
+                                // shape by falling back to an empty object.
+                                const uploadParams = (Array.isArray(uploadInfo) ? {} : uploadInfo) as {
+                                    voucher_id?: string;
+                                    rsbsa_no?: string;
+                                    shortname?: string;
+                                };
+
+                                console.log("[TRANSACTION DETAILS - PENDING] Check upload info params: ", uploadParams);
 
                                 console.log("[TRANSACTION DETAILS - PENDING] Redirecting directly to Upload Attachments");
 

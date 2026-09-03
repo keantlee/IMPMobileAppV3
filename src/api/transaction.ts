@@ -7,7 +7,6 @@ import { POST, GET } from "./config/axios";
 import ScreenNames from '../navigation/screenNames';
 import EndPoints from './config/endpoints';
 import { TransactionInfo, VoucherInfo } from '../@types/voucher';
-import { CommonActions } from '@react-navigation/native';
 
 interface ScanVoucherPayload {
   voucherCode: string;
@@ -221,14 +220,10 @@ export const saveAttachmentMutation = (navigation: any) => {
     },
     onSuccess: (serverData) => {
         console.log('[SAVE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
-        
-        // Navigate to Home Screen and unmount the previous stacks
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: ScreenNames.HOME_STACK.HOME }],
-          })
-        );
+
+        // Navigation is intentionally handled by the Upload Attachments screen's
+        // success modal (handleCloseAlertModal) so the user sees the "Success!"
+        // confirmation before being routed away.
     },
     onError: (error: Error) => {
         console.warn('[SAVE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
@@ -375,13 +370,12 @@ export const updateAttachmentMutation = (navigation: any) => {
     onSuccess: (serverData) => {
       console.log('[UPDATE ATTACHMENT MUTATION] Server pipeline successfully completed code execution:', serverData);
 
-      // Cleanly reset back to home frame
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: ScreenNames.BOTTOM_TABS.HOME }]
-        })
-      );
+      // Switch to the Home tab and land on its root screen. Using a nested
+      // navigate works from any nested stack (unlike a reset to a route the
+      // current navigator doesn't own).
+      navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+        screen: ScreenNames.HOME_STACK.HOME,
+      });
     },
     onError: (error: Error) => {
       console.warn('[UPDATE ATTACHMENT MUTATION] Critical transmission exception encountered:', error.message);
@@ -448,6 +442,51 @@ export const getTransactionHistoryMutation = () => {
   });
 }
 
+// Status counts for the Home Status Overview cards. Returns true totals per
+// status across the full history (not limited to the recent list slice).
+export interface transactionStatusCounts {
+  Pending:       number;
+  'Re-Upload':   number;
+  'Re-Transact': number;
+  Completed:     number;
+}
+
+export interface transactionStatusCountsResponse {
+  status:  boolean;
+  counts:  transactionStatusCounts;
+  total:   number;
+  message?: string;
+}
+
+export const getTransactionStatusCountsMutation = () => {
+  return useMutation<transactionStatusCountsResponse, Error, { supplier_id: string }>({
+    mutationFn: async (payload) => {
+      const netState = await NetInfo.fetch();
+
+      if (!netState.isConnected || !netState.isInternetReachable) {
+        throw new Error('[GET STATUS COUNTS MUTATION] No internet connection found.');
+      }
+
+      const response = await POST<transactionStatusCountsResponse>(
+        EndPoints.GET_TRANSACTION_STATUS_COUNTS,
+        { supplier_id: payload.supplier_id },
+      );
+
+      if (response.status !== true) {
+        throw new Error(response.message || 'Failed to fetch status counts.');
+      }
+
+      return response;
+    },
+    onSuccess: (serverData) => {
+      console.log('[GET STATUS COUNTS MUTATION] Server data received: ', serverData.counts);
+    },
+    onError: (error: Error) => {
+      console.warn('[GET STATUS COUNTS MUTATION] TanStack Exception Tracker: ', error.message);
+    },
+  });
+};
+
 export interface transactionDetailsPayload {
   transaction_id: string;
   reference_no:   string;
@@ -495,7 +534,7 @@ export const getTransactionDetailsMutation = () => {
           throw new Error('[GET TRANSACTION DETAILS MUTATION] No internet connection found.');
       }
 
-      console.log("[GET TRANSACTION DETAILS MUTATION] payload payload: ", payload);
+      console.log("[GET TRANSACTION DETAILS MUTATION] payload: ", payload);
 
       let cleanPayload = { 
         transaction_id: payload.transaction_id, 
@@ -503,6 +542,8 @@ export const getTransactionDetailsMutation = () => {
         supplier_id:    payload.supplier_id,
         status:         payload.status,
       };
+
+      console.log("[GET TRANSACTION DETAILS MUTATION] clean payload: ", cleanPayload);
 
       const response = await POST<transactionDetailsResponsePayload>(
         EndPoints.GET_TRANSACTION_DETAILS, 

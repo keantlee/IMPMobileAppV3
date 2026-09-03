@@ -42,7 +42,7 @@ const ReviewTransactionScreen = () => {
     // 3. Callbacks
     const handleSyncAndGoBack = useCallback(() => {
         navigation.navigate({
-            name: ScreenNames.TRANSACTION_STACK.CHECKOUT,
+            name: ScreenNames.TRANSACTION_STACK.CART,
             params: { 
                 voucherInfo: voucherInfo,              // Keeps voucher data updated
                 FinalCart:   cart,                     // Syncs the active items list

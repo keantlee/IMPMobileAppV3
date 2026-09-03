@@ -219,13 +219,21 @@ const EditItem = () => {
             const unitShorthand: Record<string, string> = { "1": "(L)", "2": "(KG)", "3": "(G)", "4": "(ML)" };
             const displayUnit = unitShorthand[unitMeasurement.value] || unitMeasurement.value;
 
+            // Resolve the selected category's display label. Fall back to the
+            // item's original categoryName so it's never dropped on edit.
+            const categoryLabel =
+                voucherInfo?.fertilizer_categories?.find(c => c.value === category.value)?.label
+                || commodityInfo?.categoryName
+                || "Commodity";
+
             const assignedSubName = checkCategoryHasSubCategory.includes(category.value) 
                 ? subCategory.value 
-                : voucherInfo?.fertilizer_categories?.find(c => c.value === category.value)?.label || "Item";
+                : categoryLabel;
 
             const serializedEditedItem = {
                 name:                   assignedSubName,
                 category:               category.value,
+                categoryName:           categoryLabel,   // preserve category label for the Review Cart display
                 subCategory:            subCategory.value,
                 quantity:               quantity.value,
                 unitMeasurement:        displayUnit,
@@ -244,11 +252,17 @@ const EditItem = () => {
 
             setIsLoading(false);
 
-            // ✅ Back-propagate back into Checkout using modern parameters structures
+            // ✅ Back-propagate the edited cart into the Review Cart screen, which
+            // intercepts updatedCartFromEdit via its route params. Re-send
+            // voucherInfo and timer too so Review Cart never loses its voucher
+            // context on the edit round-trip (it originally received these from
+            // the Cart screen).
             navigation.navigate({
-                name: ScreenNames.TRANSACTION_STACK.CHECKOUT,
+                name: ScreenNames.TRANSACTION_STACK.REVIEW_CART,
                 params: { 
-                    updatedCartFromEdit: fullyUpdatedCartArray 
+                    updatedCartFromEdit: fullyUpdatedCartArray,
+                    voucherInfo:         voucherInfo,
+                    timer:               timer,
                 },
                 merge: true,
             });
