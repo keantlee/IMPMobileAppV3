@@ -58,7 +58,7 @@ const UploadAttachment = () => {
 
     console.log("[UPLOAD ATTACHMENT SCREEN] Incoming route: ", route);
 
-    const routeParams           = (route.params || {}) as TransactionRouteParams;
+    const routeParams = (route.params || {}) as TransactionRouteParams;
     const { 
         voucherId, 
         rsbsaNo, 
@@ -178,14 +178,34 @@ const UploadAttachment = () => {
         if (alertConfig.type === 'success') {
             reset();
             saveMutation.reset();
-            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME);
+
+            // Clear the entire Transaction (QR) flow back to the scanner so the
+            // Scan tab starts fresh next time. This screen lives in the
+            // Transaction stack, so the reset applies to it.
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: ScreenNames.TRANSACTION_STACK.SCANNING }],
+                }),
+            );
+
+            // Then switch to the Home tab and land on its root screen.
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+                screen: ScreenNames.HOME_STACK.HOME,
+            });
         } else {
             saveMutation.reset(); // Allows user to retry submitting cleanly
         }
     };
 
-    const onSubmit = async (data: AttachmentFormData) => {
-        let isMounted = true; 
+    // Typed against the form's input shape (nullable). The Zod refinements
+    // guarantee the required slots are filled by the time this runs, but Zod's
+    // .refine() doesn't narrow the output type, so we guard here for safety.
+    const onSubmit = async (data: AttachmentInputData): Promise<void> => {
+        if (!data.beneficiary || !data.frontID || !data.backID || !data.receipt) {
+            Alert.alert('Incomplete', 'Please attach all required photos before uploading.');
+            return;
+        }
 
         try {
             const beneficiaryPayload    = await converImageToBase64(data.beneficiary);
@@ -193,10 +213,8 @@ const UploadAttachment = () => {
             const backIDPayload         = await converImageToBase64(data.backID);
             const receiptPayload        = await converImageToBase64(data.receipt);
             const otherDocsPayload      = await Promise.all(
-                data.otherDocs.map(file => converImageToBase64(file))
+                (data.otherDocs || []).map(file => converImageToBase64(file))
             );
-
-            if (!isMounted) return; // Break routine execution if component unmounted midway
 
             const attachmentParams = {
                 beneficiary: {
@@ -229,13 +247,9 @@ const UploadAttachment = () => {
             };
 
             saveMutation.mutate({ attachmentParams });
-        } catch (error) {
-            if (isMounted) {
-                Alert.alert("Upload Failed", "An error occurred while compiling your images.");
-            }
+        } catch {
+            Alert.alert("Upload Failed", "An error occurred while compiling your images.");
         }
-
-        return () => { isMounted = false; };
     };
 
     const handleSyncAndGoBack = useCallback(() => {
@@ -264,46 +278,28 @@ const UploadAttachment = () => {
             });
         } else if (prevRouteName === 'PendingTransactionsScreen') {
             console.log('[UPLOAD ATTACHMENT] Go Back to Pending Transactions list.');
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 1,
-                    routes: [
-                        { name: ScreenNames.HOME_STACK.HOME },
-                        { name: ScreenNames.HOME_STACK.PENDING_TRANSACTIONS },
-                    ],
-                }),
-            );
+            // These live in the Home stack; this screen is in the Transaction
+            // stack, so a reset here can't reach them. Switch to the Home tab
+            // and target the Home-stack screen via a nested navigate.
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+                screen: ScreenNames.HOME_STACK.PENDING_TRANSACTIONS,
+            });
         } else if (prevRouteName === 'TransactionHistoryScreen') {
-            const params = {
-                supplierId:supplierId,
-            };
-
-            console.log('[UPLOAD ATTACHMENT] Go Back to Transacion History Screen: ', params);
-
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 1,
-                    routes: [
-                        { name: ScreenNames.HOME_STACK.HOME },
-                        { name: ScreenNames.HOME_STACK.TRANSACTION_HISTORY, params: { supplierId } },
-                    ],
-                }),
-            );
+            console.log('[UPLOAD ATTACHMENT] Go Back to Transaction History Screen.');
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+                screen: ScreenNames.HOME_STACK.TRANSACTION_HISTORY,
+                params: { supplierId },
+            });
         } else if (prevRouteName === 'UploadConfirmationScreen') {
-            navigation.navigate(ScreenNames.TRANSACTION_STACK.UPLOAD_CONFIRMATION_SCREEN, {
-                transactionId:  transactionId,
-                referenceNo:    referenceNo,
-                voucherId:      voucherId,
-                rsbsaNo:        rsbsaNo,
-                shortname:      shortname
-            })
+            // Coming from the confirmation step: going back should land on the
+            // Home screen (a fresh start), not re-open the confirmation.
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+                screen: ScreenNames.HOME_STACK.HOME,
+            });
         } else {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: ScreenNames.HOME_STACK.HOME }],
-                }),
-            );
+            navigation.navigate(ScreenNames.BOTTOM_TABS.HOME, {
+                screen: ScreenNames.HOME_STACK.HOME,
+            });
         }
     }, [navigation, reset, prevRouteName, transactionId, referenceNo, supplierId]);
 

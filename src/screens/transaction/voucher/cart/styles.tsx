@@ -46,6 +46,7 @@ export const styles = StyleSheet.create({
     itemSub: { fontSize: 13, color: '#7F8C8D', marginTop: 2 },
     itemCashAdd: { fontSize: 13, color: '#333', fontWeight: '600', marginTop: 4 },
     itemDetails: { fontSize: 13, color: '#333', fontWeight: '500', marginTop: 4 },
+    remarksText: { fontSize: 12, color: '#7F8C8D', fontStyle: 'italic', marginTop: 4 },
     itemPriceBlock: { alignItems: 'flex-end' },
     itemPrice: { fontSize: 16, fontWeight: '800', color: '#009246' },
     removeButton: { marginTop: 8, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: '#FFF5F5', borderRadius: 4 },

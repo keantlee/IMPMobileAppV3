@@ -63,7 +63,11 @@ const UploadConfirmationScreen = () => {
             referenceNo,
             transactionId,
             supplierId,
-            shortname
+            shortname,
+            // Required: the backend only persists attachments (voucher_transaction,
+            // voucher_attachments, voucher_path) when prevRouteName is one of the
+            // allowed screens. Without it, S3 upload succeeds but nothing is saved.
+            prevRouteName: 'UploadConfirmationScreen',
         }); 
     };
 

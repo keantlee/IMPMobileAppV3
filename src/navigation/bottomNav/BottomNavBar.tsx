@@ -140,6 +140,17 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = () => {
       <BottomTab.Screen
         name={ScreenNames.BOTTOM_TABS.SCANNING as any}
         component={TransactionStackComponent}
+        listeners={({ navigation: nav }) => ({
+          tabPress: (e: any) => {
+            // Pressing the Scan tab should always land on a fresh scanner,
+            // discarding any leftover transaction flow (FarmerProfile, Cart,
+            // ReviewCart, etc.) so the user can scan a new voucher.
+            e.preventDefault();
+            nav.navigate(ScreenNames.BOTTOM_TABS.SCANNING, {
+              screen: ScreenNames.TRANSACTION_STACK.SCANNING,
+            });
+          },
+        })}
       />
 
       {/* PROFILE TAB */}
