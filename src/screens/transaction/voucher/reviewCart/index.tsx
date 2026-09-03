@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -23,8 +23,11 @@ import { getSession } from '../../../../utils/session';
 import { renderAlertPng } from '../../../../assets/icons';
 
 interface ReviewCartRouteParams {
-    voucherInfo:            VoucherInfo;
-    cart:                   any[];  
+    // voucherInfo and cart arrive on entry from Cart, but the Edit Item
+    // round-trip returns with only updatedCartFromEdit, so these are optional.
+    // Review Cart holds voucherInfo/timer in state to survive that round-trip.
+    voucherInfo?:           VoucherInfo;
+    cart?:                  any[];  
     timer?:                 number;
     updatedCartFromEdit?:   any[]; // Intercepts array updates safely from Edit Item screen
 }
@@ -35,22 +38,38 @@ const ReviewCart = () => {
 
     const routeParams   = (route.params || {}) as ReviewCartRouteParams;
     const { 
-        voucherInfo, 
         cart: initialCart = [], 
-        timer, 
     } = routeParams;
 
     console.log('[REVIEW CART SCREEN] Incoming state params:', routeParams);
 
     const transactionMutation = saveTransactionMutation(navigation);
 
-    const transactionId = transactionMutation.data?.data;
+    console.log("[REVIEW CART SCREEN] check save transactino mutation: ", transactionMutation);
 
-    console.log("[REVIEW CART SCREEN] check transaction mutation data: ", transactionMutation.data?.data);
+    console.log("[REVIEW CART SCREEN] check save transaction mutation with data: ", transactionMutation.data?.data);
+
+    const transactionId = transactionMutation.data?.data;
 
     // 1. Core State Trackers
     const [cart, setCart]           = useState<any[]>(initialCart);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    // Hold voucherInfo + timer in state so they survive the Edit Item round-trip
+    // (the returning navigation only carries updatedCartFromEdit and drops these
+    // from route.params). Only update when a defined value arrives.
+    const [voucherInfoState, setVoucherInfoState] = useState<VoucherInfo | undefined>(
+        routeParams.voucherInfo,
+    );
+    const [timerState, setTimerState] = useState<number | undefined>(routeParams.timer);
+
+    const voucherInfo = (route.params?.voucherInfo as VoucherInfo | undefined) || voucherInfoState;
+    const timer = (route.params?.timer as number | undefined) ?? timerState;
+
+    useEffect(() => {
+        if (route.params?.voucherInfo) setVoucherInfoState(route.params.voucherInfo);
+        if (route.params?.timer !== undefined) setTimerState(route.params.timer);
+    }, [route.params?.voucherInfo, route.params?.timer]);
 
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -74,18 +93,27 @@ const ReviewCart = () => {
         return balance < 0 ? 0 : balance;
     }, [cartTotalAmount, voucherInfo?.voucherRemainingBalance]);
 
+    // Keep a ref to the latest cart so the back handler always reads the freshest
+    // items without needing `cart` in its dependency array. This keeps
+    // handleSyncAndGoBack stable, so the hardware BackHandler doesn't re-subscribe
+    // on every cart change.
+    const cartRef = useRef(cart);
+    useEffect(() => {
+        cartRef.current = cart;
+    }, [cart]);
+
     // 3. Sync Back to Cart Handler Vector
     const handleSyncAndGoBack = useCallback(() => {
         navigation.navigate({
             name: ScreenNames.TRANSACTION_STACK.CART,
             params: { 
                 voucherInfo:             voucherInfo,              // Keeps voucher data updated
-                updatedCartFromCheckout: cart,                     // Syncs the active items list
+                updatedCartFromCheckout: cartRef.current,          // Always the freshest items list
                 timer:                   timer                     // Keeps the running countdown alive
             },
             merge: true,
         });
-    }, [navigation, voucherInfo, cart, timer]);
+    }, [navigation, voucherInfo, timer]);
 
     // 4. useEffect - Intercept updates from Edit Item screen
     useEffect(() => {
@@ -141,17 +169,23 @@ const ReviewCart = () => {
             const updatedCart = [...prevCart];
             updatedCart.splice(index, 1);
             
-            // Auto-fallback redirect if basket is completely empty
+            // Auto-fallback redirect if basket is completely empty. Always pass
+            // voucherInfo (and timer) so the Cart screen never loses its voucher
+            // context on this navigation (avoids the "missing routing data" guard).
             if (updatedCart.length === 0) {
                 navigation.navigate({
                     name: ScreenNames.TRANSACTION_STACK.CART,
-                    params: { updatedCartFromCheckout: [] },
+                    params: {
+                        voucherInfo:             voucherInfo,
+                        updatedCartFromCheckout: [],
+                        timer:                   timer,
+                    },
                     merge: true,
                 });
             }
             return updatedCart;
         });
-    }, [navigation]);
+    }, [navigation, voucherInfo, timer]);
 
     // Edit item navigation with pre-calculated total amount excluding the target item for accurate balance display in Edit screen
     const goToEditItem = (item: any, index: number) => {
@@ -159,7 +193,7 @@ const ReviewCart = () => {
         const otherItemsTotal = cart.reduce((prev, curr, idx) => 
             prev + (idx !== index ? parseFloat(curr.totalAmount || 0) : 0), 0);
 
-        console.log("[CHECKOUT SCREEN] Transferring data to Edit context panel index: ", index);
+        console.log("[REVIEW CART SCREEN] Transferring data to Edit context panel index: ", index);
 
         navigation.navigate(ScreenNames.TRANSACTION_STACK.EDIT_ITEM, {
             commodityInfo:      { ...item, index }, // Appends target item index pointer safely
@@ -172,6 +206,11 @@ const ReviewCart = () => {
 
     // Saving transaction handler - initiates the final checkout process and server mutation
     const handleCheckout = () => {
+        if (!voucherInfo) {
+            console.warn('[REVIEW CART SCREEN] Missing voucherInfo; cannot checkout.');
+            return;
+        }
+
         const checkoutParams = { voucherInfo, cart };
 
         console.log("[REVIEW CART SCREEN] Payload:", checkoutParams);
@@ -208,7 +247,7 @@ const ReviewCart = () => {
                 <View style={styles.itemRow}>
                     <View style={styles.itemInfo}>
                         <Text style={styles.itemName}>{item.name || "Commodity Item"}</Text>
-                        <Text style={styles.itemSub}>{item.subCategory || "No Sub-Category"}</Text>
+                        <Text style={styles.itemSub}>{item.categoryName || "No Category"}</Text>
                         <Text style={styles.itemDetails}>
                             Qty: {item.quantity} {item.unitMeasurement}
                         </Text>

@@ -18,9 +18,13 @@ import ScreenNames from '../../../../navigation/screenNames';
 import { styles } from './styles';
 
 interface CartRouteParams {
-    status:                     boolean;
-    voucherInfo:                VoucherInfo;
+    // status and voucherInfo are only present on the initial navigation into
+    // Cart (from Farmer Profile). Back-navigations (e.g. from Review Cart) may
+    // omit them, so they're optional — Cart holds voucherInfo in state.
+    status?:                    boolean;
+    voucherInfo?:               VoucherInfo;
     timer?:                     number;
+    cart?:                      any[];         // Prior basket items carried on returns
     newItemFromForm?:           any;           // Intercepts returning items safely
     updatedCartFromCheckout?:   any[];         // Intercepts checkout updates safely
 }
@@ -31,10 +35,28 @@ const Cart = () => {
     
     // Cast your route params using our defined structure
     const routeParams            = (route.params || {}) as CartRouteParams;
-    const { voucherInfo, timer } = routeParams;
+    const { timer }              = routeParams;
 
     // 1. Local Shopping Cart State Allocation
     const [cart, setCart]        = useState<any[]>([]);
+
+    // Hold voucherInfo in state so it survives back-navigation merges that may
+    // omit it (e.g. returning from Review Cart). It's only updated when a
+    // defined value arrives via params, never blanked by a merge.
+    const [voucherInfoState, setVoucherInfo] = useState<VoucherInfo | undefined>(
+        routeParams.voucherInfo,
+    );
+
+    // Prefer the freshest incoming param, falling back to held state. This
+    // avoids a transient "missing voucher" render on remount before the sync
+    // effect runs.
+    const voucherInfo = (route.params?.voucherInfo as VoucherInfo | undefined) || voucherInfoState;
+
+    useEffect(() => {
+        if (route.params?.voucherInfo) {
+            setVoucherInfo(route.params.voucherInfo);
+        }
+    }, [route.params?.voucherInfo]);
 
     // 2. Navigation Param Parameter Event Listeners
     useEffect(() => {
@@ -187,11 +209,14 @@ const Cart = () => {
             <View style={styles.itemCard}>
                 <View style={styles.itemRow}>
                     <View style={styles.itemInfo}>
-                        <Text style={styles.itemName}>{item.subCategory || "No Sub-Category"}</Text>
-                        <Text style={styles.itemSub}>{item.categoryName}</Text>
+                        <Text style={styles.itemName}>{item.name || "Commodity Item"}</Text>
+                        <Text style={styles.itemSub}>{item.categoryName || "No Category"}</Text>
                         <Text style={styles.itemDetails}>
                             Qty: {item.quantity} {item.unitMeasurement}
                         </Text>
+                        {item.itemCategoryRemarks && item.itemCategoryRemarks !== "None" && (
+                            <Text style={styles.remarksText}>Notes: {item.itemCategoryRemarks}</Text>
+                        )}
                     </View>
                     <View style={styles.itemPriceBlock}>
                         <Text style={styles.itemPrice}>

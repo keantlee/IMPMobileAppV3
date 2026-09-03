@@ -5,6 +5,7 @@ const EndPoints = {
   RESEND_OTP:                           'resend-otp',
   SEND_RESET_PASSWORD_LINK:             'form_reset_password_link/sending_request',
   GET_TRANSCTION_HISTORY:               'get-transaction-history',
+  GET_TRANSACTION_STATUS_COUNTS:        'get-transaction-status-counts',
   GET_TRANSACTION_DETAILS:              'get-transaction-details',
   GET_ATTACHMENTS:                      'get-attachments',
   SCAN_QR_CODE:                         'scan-qr-code',

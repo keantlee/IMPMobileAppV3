@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,7 +18,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../../store/useAuthStore';
 import AppIcons from '../../assets/icons';
 import ScreenNames from '../../navigation/screenNames';
-import { getTransactionHistoryMutation, getTransactionDetailsMutation } from '../../api/transaction';
+import { getTransactionHistoryMutation, getTransactionDetailsMutation, getTransactionStatusCountsMutation } from '../../api/transaction';
 
 interface HomeProps {
   navigation: any;
@@ -169,29 +171,74 @@ const Home = ({ navigation }: HomeProps) => {
 
   // Transaction history state
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // True per-status totals for the Status Overview cards (independent of the
+  // 8-item recent list). Sourced from a dedicated counts endpoint.
+  const [statusCounts, setStatusCounts] = useState({
+    Pending: 0,
+    'Re-Upload': 0,
+    'Re-Transact': 0,
+  });
 
   // Mutations
   const transactionHistoryMutation = getTransactionHistoryMutation();
   const transactionDetailsMutation = getTransactionDetailsMutation();
+  const statusCountsMutation = getTransactionStatusCountsMutation();
 
-  // Fetch recent transactions on mount
-  useEffect(() => {
-    if (supplierId) {
+  // Load the recent transactions. Reused on focus and pull-to-refresh.
+  // The mutation object is intentionally omitted from deps: it's recreated each
+  // render, so including it would loop. supplierId is the only real dependency.
+  const loadTransactions = useCallback(
+    (options?: { isRefresh?: boolean }) => {
+      if (!supplierId) return;
+
+      if (options?.isRefresh) setRefreshing(true);
+
       transactionHistoryMutation.mutate(
         { supplier_id: supplierId },
         {
           onSuccess: data => {
             setRecentTransactions(data.data?.slice(0, 8) || []);
           },
+          onSettled: () => {
+            if (options?.isRefresh) setRefreshing(false);
+          },
         },
       );
-    }
-  }, [supplierId]);
 
-  // TODO: Replace with real counts from API/store
-  const pendingCount = recentTransactions.filter(t => t.transaction_status === 'Pending').length;
-  const reUploadCount = recentTransactions.filter(t => t.transaction_status === 'Re-Upload').length;
-  const reTransactCount = recentTransactions.filter(t => t.transaction_status === 'Re-Transact').length;
+      // Fetch true per-status totals separately (not derived from the sliced
+      // recent list), so the Status Overview counts reflect the full history.
+      statusCountsMutation.mutate(
+        { supplier_id: supplierId },
+        {
+          onSuccess: data => {
+            setStatusCounts({
+              Pending: data.counts?.Pending || 0,
+              'Re-Upload': data.counts?.['Re-Upload'] || 0,
+              'Re-Transact': data.counts?.['Re-Transact'] || 0,
+            });
+          },
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [supplierId],
+  );
+
+  // Refetch every time the Home screen regains focus (e.g. after uploading
+  // attachments and navigating back), so the latest data is always shown.
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions();
+    }, [loadTransactions]),
+  );
+
+  // True totals per status (from the dedicated counts endpoint), independent of
+  // the 8-item recent list.
+  const pendingCount = statusCounts.Pending;
+  const reUploadCount = statusCounts['Re-Upload'];
+  const reTransactCount = statusCounts['Re-Transact'];
 
   const handleNavigateTransactionHistory = () => {
     navigation.navigate(ScreenNames.HOME_STACK.TRANSACTION_HISTORY);
@@ -350,6 +397,14 @@ const Home = ({ navigation }: HomeProps) => {
         renderItem={null}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadTransactions({ isRefresh: true })}
+            colors={['#009246']}
+            tintColor="#009246"
+          />
+        }
         ListHeaderComponent={
           <View style={{ marginTop: 20 }}>
             {/* Section: Status Overview (1st Row - 3 Metric Cards) */}
@@ -483,8 +538,9 @@ const Home = ({ navigation }: HomeProps) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Loading State */}
-              {transactionHistoryMutation.isPending && (
+              {/* Loading State — only on the initial load (empty list), so
+                  focus refetches update the list in place without flashing. */}
+              {transactionHistoryMutation.isPending && recentTransactions.length === 0 && !refreshing && (
                 <View style={{ paddingVertical: 20, alignItems: 'center' }}>
                   <ActivityIndicator size="small" color="#009246" />
                   <Text style={{ fontSize: 12, color: '#8E8E8E', marginTop: 8 }}>
